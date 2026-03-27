@@ -2,11 +2,8 @@ import { useEffect, useState } from 'react'
 import mentorImage from './assets/Ade (2).jpg'
 
 const totalSteps = 6
-const APPS_SCRIPT_URL = String(import.meta.env.VITE_APPS_SCRIPT_URL || '').trim()
-const APPS_SCRIPT_KEY = String(import.meta.env.VITE_APPS_SCRIPT_KEY || '').trim()
-const FORM_DEBUG = String(import.meta.env.VITE_FORM_DEBUG || '').toLowerCase() === 'true'
 const SUBMIT_URL = '/api/submit'
-const maskUrl = (url) => (url && url.length > 48 ? `${url.slice(0, 48)}...` : url || '(empty)')
+const DEV_APPS_SCRIPT_URL = String(import.meta.env.VITE_APPS_SCRIPT_URL || '').trim()
 
 function App() {
   const [theme, setTheme] = useState(() => {
@@ -213,26 +210,9 @@ function App() {
     scrollToStepTop(6)
     if (!validateStep(6)) return
 
-    const looksLikePlaceholder = APPS_SCRIPT_URL.includes('PASTE_YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE')
-    const isScriptDomain = /^https:\/\/script\.google\.com\/macros\/s\//i.test(APPS_SCRIPT_URL)
-    const hasExecPath = /\/exec(?:[/?#].*)?$/i.test(APPS_SCRIPT_URL)
-    const hasConfig = import.meta.env.DEV ? Boolean(APPS_SCRIPT_URL && APPS_SCRIPT_KEY) : true
-    const isValidScriptUrl = isScriptDomain && hasExecPath
-    if (!hasConfig || looksLikePlaceholder || !isValidScriptUrl) {
-      const reason = !hasConfig
-        ? 'Missing VITE_APPS_SCRIPT_URL or VITE_APPS_SCRIPT_KEY for local development.'
-        : looksLikePlaceholder
-          ? 'VITE_APPS_SCRIPT_URL is still a placeholder value.'
-          : 'VITE_APPS_SCRIPT_URL must start with https://script.google.com/macros/s/ and end with /exec.'
-      setFormMessage({ type: 'error', text: `Apps Script is not configured correctly. ${reason} Loaded URL: ${maskUrl(APPS_SCRIPT_URL)}. Update .env and restart npm run dev.` })
-      return
-    }
-
     const form = document.getElementById('applicationForm')
     if (!form) return
-
     const formData = new FormData(form)
-
     const payload = {
       fullName: formData.get('fullName') || '',
       age: formData.get('age') || '',
@@ -262,49 +242,38 @@ function App() {
     }
 
     try {
-      setFormMessage(null)
       setIsSubmitting(true)
-      if (FORM_DEBUG) {
-        console.info('[Remarkable form] submitting payload', payload)
-        console.info('[Remarkable form] endpoint', SUBMIT_URL)
-        console.info('[Remarkable form] env URL (masked)', maskUrl(APPS_SCRIPT_URL))
-        console.info('[Remarkable form] dev key present', Boolean(APPS_SCRIPT_KEY))
+      setFormMessage(null)
+
+      if (import.meta.env.DEV && !DEV_APPS_SCRIPT_URL) {
+        setFormMessage({
+          type: 'error',
+          text: 'Sorry, we could not submit your application right now. Please try again in a moment.',
+        })
+        return
       }
+
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 20000)
       const response = await fetch(SUBMIT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         signal: controller.signal,
-        body: JSON.stringify({
-          ...(import.meta.env.DEV ? { apiKey: APPS_SCRIPT_KEY } : {}),
-          ...payload,
-        }),
+        body: JSON.stringify(payload),
       })
       clearTimeout(timeoutId)
-      const rawText = await response.text()
-      let result = null
-      if (rawText) {
+
+      const raw = await response.text()
+      let result = {}
+      if (raw) {
         try {
-          result = JSON.parse(rawText)
+          result = JSON.parse(raw)
         } catch {
-          result = null
+          result = { ok: response.ok, raw }
         }
-      }
-      if (FORM_DEBUG) {
-        console.info('[Remarkable form] HTTP status', response.status)
-        console.info('[Remarkable form] raw response', rawText)
-        console.info('[Remarkable form] parsed response', result)
       }
 
-      const serverSaysOk = result?.ok === true || String(result?.status || '').toLowerCase() === 'success'
-      const treatAsSuccess = response.ok && (serverSaysOk || !rawText)
-      if (!treatAsSuccess) {
-        if (response.status === 404) {
-          throw new Error(
-            "Submission endpoint returned 404. Your Apps Script web app URL is likely invalid, not deployed as /exec, or the deployment is not accessible.",
-          )
-        }
+      if (!response.ok || result?.ok === false) {
         throw new Error(result?.error || `Submission failed (${response.status})`)
       }
 
@@ -320,10 +289,11 @@ function App() {
       setActiveStep(1)
       scrollToApply()
     } catch (error) {
-      const msg = error?.name === 'AbortError'
-        ? 'Submission timed out after 20 seconds. Please check your internet/Apps Script deployment and try again.'
-        : `Unable to submit form: ${error.message}`
-      setFormMessage({ type: 'error', text: msg })
+      const message =
+        error?.name === 'AbortError'
+          ? 'The submission is taking longer than expected. Please check your connection and try again.'
+          : 'We could not submit your application right now. Please try again.'
+      setFormMessage({ type: 'error', text: message })
       scrollToStepTop(6)
     } finally {
       setIsSubmitting(false)

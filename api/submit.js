@@ -4,42 +4,40 @@ export default async function handler(req, res) {
   }
 
   const appsScriptUrl = String(process.env.APPS_SCRIPT_URL || '').trim()
-  const appsScriptKey = String(process.env.APPS_SCRIPT_KEY || '').trim()
-
-  const isScriptDomain = /^https:\/\/script\.google\.com\/macros\/s\//i.test(appsScriptUrl)
-  const hasExecPath = /\/exec(?:[/?#].*)?$/i.test(appsScriptUrl)
-  if (!appsScriptUrl || !appsScriptKey || !isScriptDomain || !hasExecPath) {
+  if (!appsScriptUrl) {
     return res.status(500).json({
       ok: false,
-      error: 'Server is missing APPS_SCRIPT_URL or APPS_SCRIPT_KEY configuration.',
+      error: 'Server missing APPS_SCRIPT_URL.',
     })
   }
 
-  const incoming = typeof req.body === 'object' && req.body !== null ? req.body : {}
-  const payload = {
-    apiKey: appsScriptKey,
-    ...incoming,
-  }
+  const body = typeof req.body === 'object' && req.body !== null ? req.body : {}
 
   try {
     const upstream = await fetch(appsScriptUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(body),
     })
 
-    const rawText = await upstream.text()
+    const raw = await upstream.text()
     let parsed = null
-    if (rawText) {
+    if (raw) {
       try {
-        parsed = JSON.parse(rawText)
+        parsed = JSON.parse(raw)
       } catch {
         parsed = null
       }
     }
 
-    const responseBody = parsed ?? { ok: upstream.ok, status: upstream.status, raw: rawText }
-    return res.status(upstream.ok ? 200 : 502).json(responseBody)
+    if (!upstream.ok) {
+      return res.status(502).json({
+        ok: false,
+        error: parsed?.error || `Upstream returned ${upstream.status}.`,
+      })
+    }
+
+    return res.status(200).json(parsed || { ok: true })
   } catch (error) {
     return res.status(502).json({
       ok: false,

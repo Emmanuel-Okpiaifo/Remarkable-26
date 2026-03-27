@@ -1083,6 +1083,11 @@ section {
   color: var(--cream);
 }
 
+.form-select option {
+  background: var(--ink-2);
+  color: var(--cream);
+}
+
 .form-input.has-error,
 .form-select.has-error,
 .form-textarea.has-error {

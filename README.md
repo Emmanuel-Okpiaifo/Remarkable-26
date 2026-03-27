@@ -15,23 +15,104 @@ The React Compiler is not enabled on this template because of its impact on dev 
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
 
-## Form submission setup
+## Form submissions to Google Sheets (Option A)
 
-This app submits form data through `POST /api/submit`.
+This project now uses:
 
-- In local development (`npm run dev`), Vite proxies `/api/submit` to `VITE_APPS_SCRIPT_URL`.
-- In production (Vercel), `api/submit.js` relays requests to Google Apps Script server-side.
+- Frontend form -> `POST /api/submit`
+- Local dev (`npm run dev`) -> Vite proxy sends `/api/submit` directly to your Google Apps Script URL from `.env`
+- Production -> `api/submit.js` forwards requests server-side using `APPS_SCRIPT_URL`
 
-### Local `.env`
+### 1) Google Apps Script (linked to your sheet)
+
+Use this script in the spreadsheet that has the tab named `Applications`:
+
+```javascript
+const SHEET_NAME = 'Applications';
+
+const HEADERS = [
+  'submittedAt',
+  'fullName',
+  'age',
+  'gender',
+  'state',
+  'email',
+  'whatsapp',
+  'linkedin',
+  'track',
+  'jobOrBusiness',
+  'industry',
+  'years',
+  'currentWork',
+  'satisfactionScore',
+  'satisfactionWhy',
+  'gap',
+  'vision',
+  'ordinaryWhen',
+  'videoFileName',
+  'videoLink',
+  'canAttendLaunch',
+  'commitmentScore',
+  'commitmentWhy',
+  'hearAbout',
+  'referrer',
+  'declarationAgreed'
+];
+
+function getSheet_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(SHEET_NAME) || ss.insertSheet(SHEET_NAME);
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(HEADERS);
+  } else {
+    const firstRow = sheet.getRange(1, 1, 1, HEADERS.length).getValues()[0];
+    const mismatch = HEADERS.some((h, i) => String(firstRow[i] || '').trim() !== h);
+    if (mismatch) {
+      sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
+    }
+  }
+  return sheet;
+}
+
+function doPost(e) {
+  try {
+    const data = JSON.parse((e && e.postData && e.postData.contents) || '{}');
+    const sheet = getSheet_();
+    const row = HEADERS.map((field) => {
+      if (field === 'submittedAt') return new Date().toISOString();
+      const value = data[field];
+      return value === undefined || value === null ? '' : value;
+    });
+    sheet.appendRow(row);
+
+    return ContentService
+      .createTextOutput(JSON.stringify({ ok: true }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ ok: false, error: err.message }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+```
+
+Deploy as Web App:
+
+- Execute as: `Me`
+- Who has access: `Anyone`
+- Copy the `/exec` URL
+
+### 2) Local `.env`
 
 ```env
 VITE_APPS_SCRIPT_URL=https://script.google.com/macros/s/your-script-id/exec
-VITE_APPS_SCRIPT_KEY=your-dev-key
 ```
 
-### Production environment variables (set in Vercel)
+Restart dev server after editing `.env`.
 
-- `APPS_SCRIPT_URL` = your Google Apps Script `/exec` URL
-- `APPS_SCRIPT_KEY` = your Apps Script API key
+### 3) Production environment variables
 
-Do not expose production keys as `VITE_*` variables.
+Set these on your host (e.g. Vercel):
+
+- `APPS_SCRIPT_URL` = your Apps Script `/exec` URL
+
