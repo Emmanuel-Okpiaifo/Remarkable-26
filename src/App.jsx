@@ -1,6 +1,51 @@
 import { useEffect, useState } from 'react'
 import mentorImage from './assets/Ade (2).jpg'
 
+/** Placeholder photos (Unsplash). Swap `src` for your own images anytime. */
+const mentorMomentTiles = [
+  {
+    src: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=1200&q=80',
+    caption: 'Workshops & learning',
+    alt: 'People collaborating in a workshop setting',
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=1200&q=80',
+    caption: 'Cohorts & community',
+    alt: 'Team gathered around a table',
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80',
+    caption: 'Building together',
+    alt: 'Colleagues working on a project',
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1544531586-fde5298cef13?auto=format&fit=crop&w=1200&q=80',
+    caption: 'On stage & in the room',
+    alt: 'Speaker addressing an audience',
+  },
+]
+
+const testimonials = [
+  {
+    quote:
+      "Ade has a rare gift: he sees the person behind the title. That shifted how I think about leadership and how I show up for my team.",
+    role: 'Senior manager',
+    place: 'Lagos',
+  },
+  {
+    quote:
+      "I came in scattered; I left with a plan. The accountability and clarity — not fluff — are what I needed at my stage.",
+    role: 'Founder',
+    place: 'Nigeria',
+  },
+  {
+    quote:
+      "This is strategy you can execute the next day. Direct, practical, and deeply personal — exactly what mentoring should feel like.",
+    role: 'Professional',
+    place: 'Abuja',
+  },
+]
+
 const totalSteps = 6
 const SUBMIT_URL = '/api/submit'
 const DEV_APPS_SCRIPT_URL = String(import.meta.env.VITE_APPS_SCRIPT_URL || '').trim()
@@ -18,6 +63,7 @@ function App() {
   const [selectedScale1, setSelectedScale1] = useState(null)
   const [selectedScale2, setSelectedScale2] = useState(null)
   const [hearSource, setHearSource] = useState('')
+  const [hearOtherSpecify, setHearOtherSpecify] = useState('')
   const [videoFileName, setVideoFileName] = useState('')
   const [agreed, setAgreed] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -95,7 +141,7 @@ function App() {
     const errors = {}
 
     if (step === 1) {
-      const required = ['fullName', 'age', 'gender', 'state', 'email', 'whatsapp']
+      const required = ['firstName', 'lastName', 'age', 'gender', 'state', 'email', 'whatsapp']
       required.forEach((field) => {
         if (!String(formData.get(field) || '').trim()) {
           errors[field] = 'This field is required.'
@@ -123,7 +169,7 @@ function App() {
     }
 
     if (step === 3) {
-      const required = ['satisfactionWhy', 'gap', 'vision', 'ordinaryWhen']
+      const required = ['satisfactionWhy', 'gap', 'burningQuestion', 'vision', 'ordinaryWhen']
       required.forEach((field) => {
         if (!String(formData.get(field) || '').trim()) {
           errors[field] = 'This field is required.'
@@ -155,8 +201,10 @@ function App() {
       })
       const hearAbout = String(formData.get('hearAbout') || '').trim()
       const referrer = String(formData.get('referrer') || '').trim()
+      const otherSpec = String(formData.get('hearOtherSpecify') || '').trim()
       if (!selectedScale2) errors.commitmentScore = 'Please choose a score.'
-      if (hearAbout === 'referred' && !referrer) errors.referrer = 'Please tell us who referred you.'
+      if (hearAbout === 'Referred by someone' && !referrer) errors.referrer = 'Please tell us who referred you.'
+      if (hearAbout === 'Other' && !otherSpec) errors.hearOtherSpecify = 'Please specify how you heard about us.'
       if (Object.keys(errors).length) {
         setFieldErrors((prev) => ({ ...prev, ...errors }))
         setFormMessage({ type: 'error', text: 'Please complete all logistics and commitment fields before continuing.' })
@@ -164,21 +212,32 @@ function App() {
       }
     }
 
-    if (step === 6 && !agreed) {
-      setFieldErrors((prev) => ({ ...prev, declarationAgreed: 'You must agree before submitting.' }))
-      setFormMessage({ type: 'error', text: 'Please read and agree to the declaration before submitting.' })
-      return false
+    if (step === 6) {
+      if (!agreed) {
+        setFieldErrors((prev) => ({ ...prev, declarationAgreed: 'Please confirm to continue.' }))
+        setFormMessage({ type: 'error', text: 'Please read and agree to the declaration before submitting.' })
+        return false
+      }
+      const signName = String(formData.get('signFullName') || '').trim()
+      const signDate = String(formData.get('signDate') || '').trim()
+      if (!signName) errors.signFullName = 'Please enter your full name.'
+      if (!signDate) errors.signDate = 'Please enter today’s date.'
+      if (Object.keys(errors).length) {
+        setFieldErrors((prev) => ({ ...prev, ...errors }))
+        setFormMessage({ type: 'error', text: 'Please complete your name and date to finish your application.' })
+        return false
+      }
     }
 
     setFieldErrors((prev) => {
       const next = { ...prev }
       const stepFields = {
-        1: ['fullName', 'age', 'gender', 'state', 'email', 'whatsapp'],
+        1: ['firstName', 'lastName', 'age', 'gender', 'state', 'email', 'whatsapp'],
         2: ['track', 'jobOrBusiness', 'industry', 'years', 'currentWork'],
-        3: ['satisfactionScore', 'satisfactionWhy', 'gap', 'vision', 'ordinaryWhen'],
+        3: ['satisfactionScore', 'satisfactionWhy', 'gap', 'burningQuestion', 'vision', 'ordinaryWhen'],
         4: ['videoLink'],
-        5: ['attend', 'commitmentScore', 'commitmentWhy', 'hearAbout', 'referrer'],
-        6: ['declarationAgreed'],
+        5: ['attend', 'commitmentScore', 'commitmentWhy', 'hearAbout', 'referrer', 'hearOtherSpecify'],
+        6: ['declarationAgreed', 'signFullName', 'signDate'],
       }[step] || []
       stepFields.forEach((f) => delete next[f])
       return next
@@ -213,8 +272,12 @@ function App() {
     const form = document.getElementById('applicationForm')
     if (!form) return
     const formData = new FormData(form)
+    const firstName = String(formData.get('firstName') || '').trim()
+    const lastName = String(formData.get('lastName') || '').trim()
     const payload = {
-      fullName: formData.get('fullName') || '',
+      firstName,
+      lastName,
+      fullName: `${firstName} ${lastName}`.trim(),
       age: formData.get('age') || '',
       gender: formData.get('gender') || '',
       state: formData.get('state') || '',
@@ -229,6 +292,7 @@ function App() {
       satisfactionScore: selectedScale1 || '',
       satisfactionWhy: formData.get('satisfactionWhy') || '',
       gap: formData.get('gap') || '',
+      burningQuestion: formData.get('burningQuestion') || '',
       vision: formData.get('vision') || '',
       ordinaryWhen: formData.get('ordinaryWhen') || '',
       videoFileName: videoFileName || '',
@@ -238,7 +302,10 @@ function App() {
       commitmentWhy: formData.get('commitmentWhy') || '',
       hearAbout: formData.get('hearAbout') || '',
       referrer: formData.get('referrer') || '',
+      hearOtherSpecify: formData.get('hearOtherSpecify') || '',
       declarationAgreed: agreed,
+      signFullName: formData.get('signFullName') || '',
+      signDate: formData.get('signDate') || '',
     }
 
     try {
@@ -281,6 +348,7 @@ function App() {
       setSelectedScale1(null)
       setSelectedScale2(null)
       setHearSource('')
+      setHearOtherSpecify('')
       setVideoFileName('')
       setAgreed(false)
       setFieldErrors({})
@@ -315,6 +383,7 @@ function App() {
             <a href="#program">Program</a>
             <a href="#event">Launch Event</a>
             <a href="#mentor">Mentor</a>
+            <a href="#stories">Stories</a>
             <a href="#apply" className="nav-apply">
               Apply Now
             </a>
@@ -345,6 +414,7 @@ function App() {
         <a href="#program" onClick={() => setMenuOpen(false)}>Program</a>
         <a href="#event" onClick={() => setMenuOpen(false)}>Launch Event</a>
         <a href="#mentor" onClick={() => setMenuOpen(false)}>Mentor</a>
+        <a href="#stories" onClick={() => setMenuOpen(false)}>Stories</a>
         <a href="#apply" className="mobile-apply" onClick={() => setMenuOpen(false)}>Apply Now</a>
         <button
           type="button"
@@ -555,6 +625,99 @@ function App() {
               <div className="mentor-attribution">— Ade' Olowojoba</div>
             </div>
           </div>
+
+          <div className="mentor-track reveal">
+            <div className="mentor-track-heading">
+              <span className="mentor-track-icon" aria-hidden="true" />
+              Mentorship you can verify
+            </div>
+            <p className="mentor-track-lead body-text">
+              Before Remarkable, Ade&apos; spent years building programs and teams that meet young people where they are — in classrooms, communities, and partner ecosystems across Nigeria and beyond.
+            </p>
+            <div className="mentor-stats">
+              <div className="mentor-stat mentor-stat--a">
+                <span className="mentor-stat-val">30k+</span>
+                <span className="mentor-stat-label">Young people reached via NerdzFactory programs</span>
+              </div>
+              <div className="mentor-stat mentor-stat--b">
+                <span className="mentor-stat-val">CodeLagos</span>
+                <span className="mentor-stat-label">Pioneer project lead — state-wide digital skills</span>
+              </div>
+              <div className="mentor-stat mentor-stat--c">
+                <span className="mentor-stat-val">20+</span>
+                <span className="mentor-stat-label">Team members across three continents</span>
+              </div>
+              <div className="mentor-stat mentor-stat--d">
+                <span className="mentor-stat-val">Meta · UNDP</span>
+                <span className="mentor-stat-label">Plus Mastercard Foundation, British Council, GIZ &amp; more</span>
+              </div>
+            </div>
+            <ul className="mentor-track-list">
+              <li>
+                Scaled NerdzFactory from a room and NGN 25,000 into a leading social innovation centre — digital skills, entrepreneurship, and workforce development at real scale.
+              </li>
+              <li>
+                Corporate chapter: Community Affairs at Microsoft Nigeria; later a director in Ondo State Government — bridging public purpose and private-sector execution.
+              </li>
+              <li>
+                Today: based in Canada with his family while actively building ventures that invest in Nigeria and Africa&apos;s next generation — Remarkable is that same through-line, condensed for 50 people.
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section className="moments-section" id="stories" aria-labelledby="moments-heading">
+        <div className="moments-section-glow" aria-hidden="true" />
+        <div className="inner moments-inner">
+          <div className="eyebrow reveal">In the room</div>
+          <h2 className="section-title reveal" id="moments-heading">
+            Moments from <em>the work</em>
+          </h2>
+          <p className="body-text reveal" style={{ maxWidth: '560px' }}>
+            Mentoring shows up in rooms — stages, cohorts, and partner programs. Placeholder photos below; swap them for your own shots anytime.
+          </p>
+          <div className="moments-grid reveal">
+            {mentorMomentTiles.map((tile, i) => (
+              <figure className={`moment-card ${i === 0 ? 'moment-card--lead' : ''}`} key={tile.src}>
+                <div className="moment-card-shine" aria-hidden="true" />
+                <img src={tile.src} alt={tile.alt} loading="lazy" decoding="async" />
+                <figcaption className="moment-caption">
+                  <span className="moment-caption-text">{tile.caption}</span>
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="testimonials-section" id="voices" aria-labelledby="voices-heading">
+        <div className="testimonials-section-glow" aria-hidden="true" />
+        <div className="inner testimonials-inner">
+          <div className="eyebrow reveal">Voices</div>
+          <h2 className="section-title reveal" id="voices-heading">
+            What people <em>say</em>
+          </h2>
+          <p className="body-text reveal" style={{ maxWidth: '560px' }}>
+            Reflections from professionals who have worked with Ade&apos; through programs and mentoring contexts.
+          </p>
+          <div className="testimonials-grid reveal">
+            {testimonials.map((t, i) => (
+              <blockquote className={`testimonial-card testimonial-card--${(i % 3) + 1}`} key={i}>
+                <span className="testimonial-mark" aria-hidden="true">
+                  “
+                </span>
+                <p className="testimonial-quote">{t.quote}</p>
+                <footer className="testimonial-source">
+                  <span className="testimonial-avatar" aria-hidden="true" />
+                  <span className="testimonial-meta">
+                    <strong>{t.role}</strong>
+                    {t.place ? ` · ${t.place}` : ''}
+                  </span>
+                </footer>
+              </blockquote>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -600,7 +763,7 @@ function App() {
             <div className="faq-item"><div className="faq-q">How many people will be accepted?</div><div className="faq-a">Only 50 participants will be selected for Remarkable '26. The selection process is rigorous because the quality of the cohort is central to the program's value. Every person in the room will be someone you want to know.</div></div>
             <div className="faq-item"><div className="faq-q">How much time do I need to commit each month?</div><div className="faq-a">Expect to invest approximately 4–6 hours per month: a 90-minute group session, a 60-minute peer circle, a 15-minute personal check-in, and time for the monthly reflection and any recommended reading.</div></div>
             <div className="faq-item"><div className="faq-q">Is the program in-person or virtual?</div><div className="faq-a">The program is hybrid. The launch event (April 18, 2026) is in-person in Lagos. Monthly sessions will be a mix of virtual and in-person, depending on the session and logistics.</div></div>
-            <div className="faq-item"><div className="faq-q">When does the application close?</div><div className="faq-a">Applications for Remarkable '26 close on March 31, 2026. Successful applicants will be notified by April 10, 2026. We strongly encourage early applications.</div></div>
+            <div className="faq-item"><div className="faq-q">When does the application close?</div><div className="faq-a">Applications for Remarkable '26 close on April 8, 2026. Successful applicants will be notified by April 10, 2026. We strongly encourage early applications.</div></div>
             <div className="faq-item"><div className="faq-q">Can I apply outside Lagos?</div><div className="faq-a">Yes. While the program is anchored in Lagos, we welcome applications from high-potential individuals across Nigeria. Virtual participation is fully supported for monthly sessions.</div></div>
           </div>
         </div>
@@ -610,7 +773,14 @@ function App() {
         <div className="apply-bg"></div>
         <div className="inner">
           <div className="apply-header reveal">
-            <div className="apply-deadline"><div className="apply-deadline-dot"></div>Applications Close — March 31, 2026</div>
+            <div className="apply-key-dates-strip">
+              Applications close: <strong>April 8, 2026</strong>
+              <span className="apply-key-sep">|</span>
+              Notifications: <strong>April 10, 2026</strong>
+              <span className="apply-key-sep">|</span>
+              Launch: <strong>April 18, 2026</strong>
+            </div>
+            <div className="apply-deadline"><div className="apply-deadline-dot"></div>Applications Close — April 8, 2026</div>
             <h2 className="section-title" style={{ fontSize: 'clamp(2.5rem,6vw,5rem)', marginBottom: '16px' }}>50 Spots.<br /><em>One</em> Decision.</h2>
             <p className="body-text" style={{ margin: '0 auto', textAlign: 'center', maxWidth: '520px' }}>If you're ready to invest 12 months into the most important project of your life — yourself — this is your moment.</p>
           </div>
@@ -624,83 +794,118 @@ function App() {
 
             {!isSubmitted && (
               <form id="applicationForm" onSubmit={(e) => e.preventDefault()}>
+                <div className="form-doc-header">
+                  <div className="form-doc-brand">REMARKABLE</div>
+                  <div className="form-doc-program">Mentorship Program &apos;26</div>
+                  <div className="form-doc-title">APPLICATION FORM</div>
+                  <div className="form-doc-dates">
+                    Applications close: April 8, 2026 <span className="form-doc-sep">|</span> Notifications: April 10, 2026 <span className="form-doc-sep">|</span> Launch: April 18, 2026
+                  </div>
+                  <p className="form-how-to">
+                    <strong>How to use this form:</strong> Complete every section honestly and thoroughly. Your answers — and your video pitch — are how we determine if Remarkable &apos;26 is the right fit for you. We are looking for clarity, self-awareness, and genuine hunger for growth.
+                  </p>
+                </div>
+
                 <div className={`form-section ${activeStep === 1 ? 'active' : ''}`} data-step="1">
-                  <div className="form-section-header"><div className="form-section-num">Section A of 6 — Personal Information</div><div className="form-section-title">Let's start with you.</div><div className="form-section-sub">Basic details to get started.</div></div>
+                  <div className="form-section-header"><div className="form-section-num">SECTION A — Personal Information</div><div className="form-section-title">Your details</div></div>
                   <div className="form-row">
-                    <div className="form-field"><label className="form-label">Full Name <span>*</span></label><input className={`form-input ${fieldErrors.fullName ? 'has-error' : ''}`} name="fullName" type="text" placeholder="Your full name" onChange={() => clearFieldError('fullName')} />{fieldErrors.fullName ? <div className="field-error">{fieldErrors.fullName}</div> : null}</div>
-                    <div className="form-field"><label className="form-label">Age <span>*</span></label><input className={`form-input ${fieldErrors.age ? 'has-error' : ''}`} name="age" type="number" placeholder="Your age" min="18" max="50" onChange={() => clearFieldError('age')} />{fieldErrors.age ? <div className="field-error">{fieldErrors.age}</div> : null}</div>
+                    <div className="form-field"><label className="form-label">1. First Name <span>*</span></label><input className={`form-input ${fieldErrors.firstName ? 'has-error' : ''}`} name="firstName" type="text" autoComplete="given-name" onChange={() => clearFieldError('firstName')} />{fieldErrors.firstName ? <div className="field-error">{fieldErrors.firstName}</div> : null}</div>
+                    <div className="form-field"><label className="form-label">2. Last Name <span>*</span></label><input className={`form-input ${fieldErrors.lastName ? 'has-error' : ''}`} name="lastName" type="text" autoComplete="family-name" onChange={() => clearFieldError('lastName')} />{fieldErrors.lastName ? <div className="field-error">{fieldErrors.lastName}</div> : null}</div>
                   </div>
+                  <div className="form-field"><label className="form-label">3. Age <span>*</span></label><input className={`form-input ${fieldErrors.age ? 'has-error' : ''}`} name="age" type="number" min="18" max="50" onChange={() => clearFieldError('age')} />{fieldErrors.age ? <div className="field-error">{fieldErrors.age}</div> : null}</div>
+                  <div className="form-field"><label className="form-label">4. Gender <span>*</span></label><select className={`form-select ${fieldErrors.gender ? 'has-error' : ''}`} name="gender" onChange={() => clearFieldError('gender')}><option value="">Select gender</option><option>Male</option><option>Female</option><option>Prefer not to say</option></select>{fieldErrors.gender ? <div className="field-error">{fieldErrors.gender}</div> : null}</div>
+                  <div className="form-field"><label className="form-label">5. State of Residence in Nigeria <span>*</span></label><input className={`form-input ${fieldErrors.state ? 'has-error' : ''}`} name="state" type="text" placeholder="e.g. Lagos" onChange={() => clearFieldError('state')} />{fieldErrors.state ? <div className="field-error">{fieldErrors.state}</div> : null}</div>
                   <div className="form-row">
-                    <div className="form-field"><label className="form-label">Gender <span>*</span></label><select className={`form-select ${fieldErrors.gender ? 'has-error' : ''}`} name="gender" onChange={() => clearFieldError('gender')}><option value="">Select gender</option><option>Male</option><option>Female</option><option>Prefer not to say</option></select>{fieldErrors.gender ? <div className="field-error">{fieldErrors.gender}</div> : null}</div>
-                    <div className="form-field"><label className="form-label">State of Residence <span>*</span></label><input className={`form-input ${fieldErrors.state ? 'has-error' : ''}`} name="state" type="text" placeholder="e.g. Lagos, Abuja, Port Harcourt" onChange={() => clearFieldError('state')} />{fieldErrors.state ? <div className="field-error">{fieldErrors.state}</div> : null}</div>
+                    <div className="form-field"><label className="form-label">6. Email Address <span>*</span></label><input className={`form-input ${fieldErrors.email ? 'has-error' : ''}`} name="email" type="email" autoComplete="email" onChange={() => clearFieldError('email')} />{fieldErrors.email ? <div className="field-error">{fieldErrors.email}</div> : null}</div>
+                    <div className="form-field"><label className="form-label">7. WhatsApp Number <span>*</span></label><input className={`form-input ${fieldErrors.whatsapp ? 'has-error' : ''}`} name="whatsapp" type="tel" autoComplete="tel" onChange={() => clearFieldError('whatsapp')} />{fieldErrors.whatsapp ? <div className="field-error">{fieldErrors.whatsapp}</div> : null}</div>
                   </div>
-                  <div className="form-row">
-                    <div className="form-field"><label className="form-label">Email Address <span>*</span></label><input className={`form-input ${fieldErrors.email ? 'has-error' : ''}`} name="email" type="email" placeholder="your@email.com" onChange={() => clearFieldError('email')} />{fieldErrors.email ? <div className="field-error">{fieldErrors.email}</div> : null}</div>
-                    <div className="form-field"><label className="form-label">WhatsApp Number <span>*</span></label><input className={`form-input ${fieldErrors.whatsapp ? 'has-error' : ''}`} name="whatsapp" type="tel" placeholder="+234 xxx xxx xxxx" onChange={() => clearFieldError('whatsapp')} />{fieldErrors.whatsapp ? <div className="field-error">{fieldErrors.whatsapp}</div> : null}</div>
-                  </div>
-                  <div className="form-field"><label className="form-label">LinkedIn Profile URL</label><input className="form-input" name="linkedin" type="url" placeholder="https://linkedin.com/in/yourprofile" /><div className="form-hint">Optional but encouraged. Helps us understand your professional background.</div></div>
+                  <div className="form-field"><label className="form-label">8. LinkedIn Profile URL <span className="form-label-opt">(optional but encouraged)</span></label><input className="form-input" name="linkedin" type="url" placeholder="https://linkedin.com/in/yourprofile" /></div>
                 </div>
 
                 <div className={`form-section ${activeStep === 2 ? 'active' : ''}`} data-step="2">
-                  <div className="form-section-header"><div className="form-section-num">Section B of 6 - Career & Business Profile</div><div className="form-section-title">Where are you right now?</div><div className="form-section-sub">Help us understand your professional context.</div></div>
-                  <div className="form-field"><label className="form-label">You are primarily: <span>*</span></label><div className="form-radio-group"><div className="form-radio"><input type="radio" name="track" value="A working professional" id="t1" onChange={() => clearFieldError('track')} /> <label htmlFor="t1">A working professional</label></div><div className="form-radio"><input type="radio" name="track" value="A founder / entrepreneur" id="t2" onChange={() => clearFieldError('track')} /> <label htmlFor="t2">A founder / entrepreneur</label></div><div className="form-radio"><input type="radio" name="track" value="Both - professional with a business on the side" id="t3" onChange={() => clearFieldError('track')} /> <label htmlFor="t3">Both - professional with a business on the side</label></div></div>{fieldErrors.track ? <div className="field-error">{fieldErrors.track}</div> : null}</div>
-                  <div className="form-row">
-                    <div className="form-field"><label className="form-label">Current Job Title or Business Name <span>*</span></label><input className={`form-input ${fieldErrors.jobOrBusiness ? 'has-error' : ''}`} name="jobOrBusiness" type="text" placeholder="e.g. Marketing Manager / Founder, XYZ Co." onChange={() => clearFieldError('jobOrBusiness')} />{fieldErrors.jobOrBusiness ? <div className="field-error">{fieldErrors.jobOrBusiness}</div> : null}</div>
-                    <div className="form-field"><label className="form-label">Industry / Sector <span>*</span></label><input className={`form-input ${fieldErrors.industry ? 'has-error' : ''}`} name="industry" type="text" placeholder="e.g. Technology, Finance, Fashion" onChange={() => clearFieldError('industry')} />{fieldErrors.industry ? <div className="field-error">{fieldErrors.industry}</div> : null}</div>
-                  </div>
-                  <div className="form-field"><label className="form-label">Years into your career or business <span>*</span></label><div className="form-radio-group"><div className="form-radio"><input type="radio" name="years" value="1-2 years" id="y1" onChange={() => clearFieldError('years')} /> <label htmlFor="y1">1-2 years</label></div><div className="form-radio"><input type="radio" name="years" value="3-5 years" id="y2" onChange={() => clearFieldError('years')} /> <label htmlFor="y2">3-5 years</label></div><div className="form-radio"><input type="radio" name="years" value="5+ years" id="y3" onChange={() => clearFieldError('years')} /> <label htmlFor="y3">5+ years</label></div></div>{fieldErrors.years ? <div className="field-error">{fieldErrors.years}</div> : null}</div>
-                  <div className="form-field"><label className="form-label">Describe what you currently do in 2-3 sentences <span>*</span></label><textarea className={`form-textarea ${fieldErrors.currentWork ? 'has-error' : ''}`} name="currentWork" placeholder="Tell us what your day-to-day looks like..." style={{ minHeight: '100px' }} onChange={() => clearFieldError('currentWork')}></textarea>{fieldErrors.currentWork ? <div className="field-error">{fieldErrors.currentWork}</div> : null}</div>
+                  <div className="form-section-header"><div className="form-section-num">SECTION B — Career &amp; Business Profile</div><div className="form-section-title">Where you are professionally</div></div>
+                  <div className="form-field"><label className="form-label">9. You are primarily: <span>*</span></label><div className="form-radio-group"><div className="form-radio"><input type="radio" name="track" value="A working professional" id="t1" onChange={() => clearFieldError('track')} /><label htmlFor="t1">A working professional</label></div><div className="form-radio"><input type="radio" name="track" value="A founder / entrepreneur" id="t2" onChange={() => clearFieldError('track')} /><label htmlFor="t2">A founder / entrepreneur</label></div><div className="form-radio"><input type="radio" name="track" value="Both — professional with a business on the side" id="t3" onChange={() => clearFieldError('track')} /><label htmlFor="t3">Both — professional with a business on the side</label></div></div>{fieldErrors.track ? <div className="field-error">{fieldErrors.track}</div> : null}</div>
+                  <div className="form-field"><label className="form-label">10. Current Job Title or Business Name <span>*</span></label><input className={`form-input ${fieldErrors.jobOrBusiness ? 'has-error' : ''}`} name="jobOrBusiness" type="text" onChange={() => clearFieldError('jobOrBusiness')} />{fieldErrors.jobOrBusiness ? <div className="field-error">{fieldErrors.jobOrBusiness}</div> : null}</div>
+                  <div className="form-field"><label className="form-label">11. Industry / Sector <span>*</span></label><input className={`form-input ${fieldErrors.industry ? 'has-error' : ''}`} name="industry" type="text" onChange={() => clearFieldError('industry')} />{fieldErrors.industry ? <div className="field-error">{fieldErrors.industry}</div> : null}</div>
+                  <div className="form-field"><label className="form-label">12. Years into your career or business <span>*</span></label><div className="form-radio-group"><div className="form-radio"><input type="radio" name="years" value="1 – 2 years" id="y1" onChange={() => clearFieldError('years')} /><label htmlFor="y1">1 – 2 years</label></div><div className="form-radio"><input type="radio" name="years" value="3 – 5 years" id="y2" onChange={() => clearFieldError('years')} /><label htmlFor="y2">3 – 5 years</label></div><div className="form-radio"><input type="radio" name="years" value="5+ years" id="y3" onChange={() => clearFieldError('years')} /><label htmlFor="y3">5+ years</label></div></div>{fieldErrors.years ? <div className="field-error">{fieldErrors.years}</div> : null}</div>
+                  <div className="form-field"><label className="form-label">13. In 2–3 sentences, describe what you currently do. Keep it clear and specific. <span>*</span></label><textarea className={`form-textarea ${fieldErrors.currentWork ? 'has-error' : ''}`} name="currentWork" style={{ minHeight: '120px' }} onChange={() => clearFieldError('currentWork')}></textarea>{fieldErrors.currentWork ? <div className="field-error">{fieldErrors.currentWork}</div> : null}</div>
                 </div>
 
                 <div className={`form-section ${activeStep === 3 ? 'active' : ''}`} data-step="3">
-                  <div className="form-section-header"><div className="form-section-num">Section C of 6 - The Growth Questions</div><div className="form-section-title">Honest answers only.</div><div className="form-section-sub">Short and sharp. 3-5 sentences per question is enough.</div></div>
+                  <div className="form-section-header"><div className="form-section-num">SECTION C — The Growth Questions</div><div className="form-section-title">Honest answers only</div></div>
+                  <div className="form-section-note">
+                    <strong>A note on this section:</strong> Short, sharp, honest answers only. 3–5 sentences per question. We are not looking for polished language. We are looking for someone who knows themselves well enough to be real.
+                  </div>
                   <div className="form-field">
-                    <label className="form-label">Where you are right now <span>*</span></label>
-                    <p className="form-hint" style={{ marginBottom: '14px' }}>On a scale of 1-10, how satisfied are you with where you are right now? Select your score, then explain why that score and not higher.</p>
+                    <label className="form-label">14. Where you are right now <span>*</span></label>
+                    <p className="form-hint" style={{ marginBottom: '14px' }}>On a scale of 1–10, how satisfied are you with where you are — and why that score, not higher?</p>
+                    <p className="form-hint form-hint-strong">Score (select one):</p>
                     <div className="scale-group">{Array.from({ length: 10 }).map((_, i) => <button key={i + 1} type="button" className={`scale-btn ${selectedScale1 === i + 1 ? 'selected' : ''}`} onClick={() => { setSelectedScale1(i + 1); clearFieldError('satisfactionScore') }}>{i + 1}</button>)}</div>
                     {fieldErrors.satisfactionScore ? <div className="field-error">{fieldErrors.satisfactionScore}</div> : null}
-                    <textarea className={`form-textarea ${fieldErrors.satisfactionWhy ? 'has-error' : ''}`} name="satisfactionWhy" placeholder="Why that score and not higher?..." style={{ minHeight: '110px' }} onChange={() => clearFieldError('satisfactionWhy')}></textarea>
+                    <textarea className={`form-textarea ${fieldErrors.satisfactionWhy ? 'has-error' : ''}`} name="satisfactionWhy" style={{ minHeight: '110px' }} onChange={() => clearFieldError('satisfactionWhy')}></textarea>
                     {fieldErrors.satisfactionWhy ? <div className="field-error">{fieldErrors.satisfactionWhy}</div> : null}
                   </div>
-                  <div className="form-field"><label className="form-label">The gap <span>*</span></label><textarea className={`form-textarea ${fieldErrors.gap ? 'has-error' : ''}`} name="gap" placeholder="What is the single biggest thing standing between you and the next level?..." onChange={() => clearFieldError('gap')}></textarea>{fieldErrors.gap ? <div className="field-error">{fieldErrors.gap}</div> : null}</div>
-                  <div className="form-field"><label className="form-label">The vision <span>*</span></label><textarea className={`form-textarea ${fieldErrors.vision ? 'has-error' : ''}`} name="vision" placeholder="One year from now, after Remarkable - what has changed in your life? Be specific..." onChange={() => clearFieldError('vision')}></textarea>{fieldErrors.vision ? <div className="field-error">{fieldErrors.vision}</div> : null}</div>
-                  <div className="form-field"><label className="form-label">Complete this sentence <span>*</span></label><div className="declaration-box" style={{ padding: '16px 20px', marginBottom: '12px' }}>"I refused to be ordinary when I..."</div><textarea className={`form-textarea ${fieldErrors.ordinaryWhen ? 'has-error' : ''}`} name="ordinaryWhen" placeholder="Complete in 2-3 sentences..." style={{ minHeight: '90px' }} onChange={() => clearFieldError('ordinaryWhen')}></textarea>{fieldErrors.ordinaryWhen ? <div className="field-error">{fieldErrors.ordinaryWhen}</div> : null}</div>
+                  <div className="form-field"><label className="form-label">15. The gap <span>*</span></label><p className="form-hint">What is the single biggest thing standing between you and the next level?</p><textarea className={`form-textarea ${fieldErrors.gap ? 'has-error' : ''}`} name="gap" onChange={() => clearFieldError('gap')}></textarea>{fieldErrors.gap ? <div className="field-error">{fieldErrors.gap}</div> : null}</div>
+                  <div className="form-field"><label className="form-label">16. The burning question <span>*</span></label><p className="form-hint">What is the one question you cannot stop asking yourself — about your career, your business, your finances, your purpose, or your life? And what frustration keeps showing up, no matter how hard you work?</p><textarea className={`form-textarea ${fieldErrors.burningQuestion ? 'has-error' : ''}`} name="burningQuestion" onChange={() => clearFieldError('burningQuestion')}></textarea>{fieldErrors.burningQuestion ? <div className="field-error">{fieldErrors.burningQuestion}</div> : null}</div>
+                  <div className="form-field"><label className="form-label">17. The vision <span>*</span></label><p className="form-hint">One year from now, after Remarkable — what has changed in your life? Be specific.</p><textarea className={`form-textarea ${fieldErrors.vision ? 'has-error' : ''}`} name="vision" onChange={() => clearFieldError('vision')}></textarea>{fieldErrors.vision ? <div className="field-error">{fieldErrors.vision}</div> : null}</div>
+                  <div className="form-field"><label className="form-label">18. Complete this sentence in 2–3 sentences <span>*</span></label><div className="declaration-box" style={{ padding: '16px 20px', marginBottom: '12px' }}>&quot;I refused to be ordinary when I...&quot;</div><textarea className={`form-textarea ${fieldErrors.ordinaryWhen ? 'has-error' : ''}`} name="ordinaryWhen" style={{ minHeight: '100px' }} onChange={() => clearFieldError('ordinaryWhen')}></textarea>{fieldErrors.ordinaryWhen ? <div className="field-error">{fieldErrors.ordinaryWhen}</div> : null}</div>
                 </div>
 
                 <div className={`form-section ${activeStep === 4 ? 'active' : ''}`} data-step="4">
-                  <div className="form-section-header"><div className="form-section-num">Section D of 6 - The Video Pitch</div><div className="form-section-title">Show us who you are.</div><div className="form-section-sub">This is the most important part of your application. It tells us everything the form cannot.</div></div>
-                  <div className="video-questions"><div className="video-questions-title">Your 60-90 second video must answer these three things</div><ol><li>Who are you and what do you do?</li><li>Why do you want to be in Remarkable '26?</li><li>What will this cohort lose if you are not in the room?</li></ol></div>
+                  <div className="form-section-header"><div className="form-section-num">SECTION D — The Video Pitch</div><div className="form-section-title form-section-title-urgent">This is the most important part of your application</div></div>
+                  <p className="form-block-lead">Record a 60–90 second video and upload the file or share a link (Google Drive, Dropbox, or YouTube unlisted). <strong>A video link or file is required.</strong></p>
+                  <p className="form-hint" style={{ marginBottom: '16px' }}>Your video must answer these three things — in any order, in your own words:</p>
+                  <ol className="form-numbered-list"><li>Who are you and what do you do?</li><li>Why do you want to be in Remarkable &apos;26?</li><li>What will the cohort lose if you are not in the room?</li></ol>
                   <div className="video-upload-box">
-                    <div className="video-upload-title">Upload Your Video</div>
-                    <div className="video-upload-sub">Click to select your video file<br />MP4, MOV, or AVI · Max 200MB · 60-90 seconds only</div>
+                    <div className="video-upload-title">Upload your video file</div>
+                    <div className="video-upload-sub">MP4, MOV, or AVI · aim for 60–90 seconds</div>
                     <input type="file" accept="video/*" onChange={(e) => setVideoFileName(e.target.files?.[0]?.name || '')} />
                     {videoFileName ? <div style={{ marginTop: '12px', fontSize: '0.8rem', color: 'var(--ember-light)' }}>Selected: {videoFileName}</div> : null}
                   </div>
-                  <div className="or-divider"><span>or share a link instead</span></div>
-                  <div className="form-field"><label className="form-label">Video Link (Google Drive, YouTube Unlisted, or Dropbox)</label><input className={`form-input ${fieldErrors.videoLink ? 'has-error' : ''}`} name="videoLink" type="url" placeholder="https://drive.google.com/..." onChange={() => clearFieldError('videoLink')} /><div className="form-hint">Make sure the link is set to "Anyone with the link can view"</div>{fieldErrors.videoLink ? <div className="field-error">{fieldErrors.videoLink}</div> : null}</div>
-                  <div className="video-guidelines"><div className="video-guidelines-title">Video Guidelines</div><ul><li>Exactly 60-90 seconds. No longer.</li><li>Face clearly visible. Speak directly to camera.</li><li>No scripts. No reading. Just you.</li><li>Any environment is fine - we are looking at you, not your background.</li><li>Confidence and authenticity matter more than production quality.</li></ul></div>
+                  <div className="or-divider"><span>or paste a link</span></div>
+                  <div className="form-field"><label className="form-label">19. Video link or file upload <span>*</span></label><p className="form-hint">Paste your Google Drive / YouTube / Dropbox link here:</p><input className={`form-input ${fieldErrors.videoLink ? 'has-error' : ''}`} name="videoLink" type="url" placeholder="https://..." onChange={() => clearFieldError('videoLink')} />{fieldErrors.videoLink ? <div className="field-error">{fieldErrors.videoLink}</div> : null}</div>
+                  <div className="video-guidelines"><div className="video-guidelines-title">Guidelines</div><ul><li>Exactly 60–90 seconds. No longer.</li><li>Face clearly visible. Speak directly to camera.</li><li>No scripts. No reading. Just you.</li><li>Any environment is fine — we are looking at you, not your background.</li></ul></div>
                 </div>
 
                 <div className={`form-section ${activeStep === 5 ? 'active' : ''}`} data-step="5">
-                  <div className="form-section-header"><div className="form-section-num">Section E of 6 - Logistics & Commitment</div><div className="form-section-title">A few final questions.</div><div className="form-section-sub">Almost done. These help us plan.</div></div>
-                  <div className="form-field"><label className="form-label">Can you attend the launch event in Lagos on Saturday, April 18, 2026? <span>*</span></label><div className="form-radio-group"><div className="form-radio"><input type="radio" name="attend" value="Yes - I will be there" id="a1" onChange={() => clearFieldError('attend')} /><label htmlFor="a1">Yes - I will be there</label></div><div className="form-radio"><input type="radio" name="attend" value="I am outside Lagos but will make arrangements to attend" id="a2" onChange={() => clearFieldError('attend')} /><label htmlFor="a2">I am outside Lagos but will make arrangements to attend</label></div><div className="form-radio"><input type="radio" name="attend" value="No - I cannot attend in person" id="a3" onChange={() => clearFieldError('attend')} /><label htmlFor="a3">No - I cannot attend in person</label></div></div>{fieldErrors.attend ? <div className="field-error">{fieldErrors.attend}</div> : null}</div>
-                  <div className="form-field"><label className="form-label">Commitment Score <span>*</span></label><p className="form-hint" style={{ marginBottom: '14px' }}>On a scale of 1-10, how committed are you to 12 months of full participation? What makes you say that number and not a 10?</p><div className="scale-group">{Array.from({ length: 10 }).map((_, i) => <button key={i + 1} type="button" className={`scale-btn ${selectedScale2 === i + 1 ? 'selected' : ''}`} onClick={() => { setSelectedScale2(i + 1); clearFieldError('commitmentScore') }}>{i + 1}</button>)}</div>{fieldErrors.commitmentScore ? <div className="field-error">{fieldErrors.commitmentScore}</div> : null}<textarea className={`form-textarea ${fieldErrors.commitmentWhy ? 'has-error' : ''}`} name="commitmentWhy" placeholder="What makes you say that number and not a 10?..." style={{ minHeight: '100px' }} onChange={() => clearFieldError('commitmentWhy')}></textarea>{fieldErrors.commitmentWhy ? <div className="field-error">{fieldErrors.commitmentWhy}</div> : null}</div>
-                  <div className="form-field"><label className="form-label">How did you hear about Remarkable? <span>*</span></label><select className={`form-select ${fieldErrors.hearAbout ? 'has-error' : ''}`} name="hearAbout" value={hearSource} onChange={(e) => { setHearSource(e.target.value); clearFieldError('hearAbout') }}><option value="">Select one</option><option>Instagram</option><option>LinkedIn</option><option>WhatsApp</option><option value="referred">Referred by someone</option><option>Twitter / X</option><option>Other</option></select>{fieldErrors.hearAbout ? <div className="field-error">{fieldErrors.hearAbout}</div> : null}</div>
-                  {hearSource === 'referred' ? <div className="form-field"><label className="form-label">Who referred you?</label><input className={`form-input ${fieldErrors.referrer ? 'has-error' : ''}`} name="referrer" type="text" placeholder="Their full name" onChange={() => clearFieldError('referrer')} />{fieldErrors.referrer ? <div className="field-error">{fieldErrors.referrer}</div> : null}</div> : null}
+                  <div className="form-section-header"><div className="form-section-num">SECTION E — Logistics &amp; Commitment</div><div className="form-section-title">Final details</div></div>
+                  <div className="form-field"><label className="form-label">20. Can you attend the in-person launch event in Lagos on Saturday, April 18, 2026? <span>*</span></label><div className="form-radio-group"><div className="form-radio"><input type="radio" name="attend" value="Yes — I will be there" id="a1" onChange={() => clearFieldError('attend')} /><label htmlFor="a1">Yes — I will be there</label></div><div className="form-radio"><input type="radio" name="attend" value="I am outside Lagos but will make travel arrangements" id="a2" onChange={() => clearFieldError('attend')} /><label htmlFor="a2">I am outside Lagos but will make travel arrangements</label></div><div className="form-radio"><input type="radio" name="attend" value="No — I cannot attend in person" id="a3" onChange={() => clearFieldError('attend')} /><label htmlFor="a3">No — I cannot attend in person</label></div></div>{fieldErrors.attend ? <div className="field-error">{fieldErrors.attend}</div> : null}</div>
+                  <div className="form-field"><label className="form-label">21. How did you hear about Remarkable? <span>*</span></label><select className={`form-select ${fieldErrors.hearAbout ? 'has-error' : ''}`} name="hearAbout" value={hearSource} onChange={(e) => {
+                      const v = e.target.value
+                      setHearSource(v)
+                      if (v !== 'Other') setHearOtherSpecify('')
+                      clearFieldError('hearAbout')
+                    }}><option value="">Select one</option><option>Instagram</option><option>LinkedIn</option><option>WhatsApp</option><option>MSME Africa</option><option>BizGrowth Africa</option><option>NerdzFactory Company Newsletter</option><option>Referred by someone</option><option>Other</option></select>{fieldErrors.hearAbout ? <div className="field-error">{fieldErrors.hearAbout}</div> : null}</div>
+                  {hearSource === 'Referred by someone' ? <div className="form-field"><label className="form-label">Name of person who referred you <span>*</span></label><input className={`form-input ${fieldErrors.referrer ? 'has-error' : ''}`} name="referrer" type="text" onChange={() => clearFieldError('referrer')} />{fieldErrors.referrer ? <div className="field-error">{fieldErrors.referrer}</div> : null}</div> : null}
+                  {hearSource === 'Other' ? <div className="form-field"><label className="form-label">Please specify <span>*</span></label><input className={`form-input ${fieldErrors.hearOtherSpecify ? 'has-error' : ''}`} name="hearOtherSpecify" type="text" value={hearOtherSpecify} onChange={(e) => { setHearOtherSpecify(e.target.value); clearFieldError('hearOtherSpecify') }} />{fieldErrors.hearOtherSpecify ? <div className="field-error">{fieldErrors.hearOtherSpecify}</div> : null}</div> : null}
+                  <div className="form-field">
+                    <label className="form-label">22. Commitment check <span>*</span></label>
+                    <p className="form-hint" style={{ marginBottom: '14px' }}>On a scale of 1–10, how committed are you to 12 months of full participation — and what makes you say that number and not a 10? (2–3 sentences)</p>
+                    <p className="form-hint form-hint-strong">Score (select one):</p>
+                    <div className="scale-group">{Array.from({ length: 10 }).map((_, i) => <button key={i + 1} type="button" className={`scale-btn ${selectedScale2 === i + 1 ? 'selected' : ''}`} onClick={() => { setSelectedScale2(i + 1); clearFieldError('commitmentScore') }}>{i + 1}</button>)}</div>
+                    {fieldErrors.commitmentScore ? <div className="field-error">{fieldErrors.commitmentScore}</div> : null}
+                    <textarea className={`form-textarea ${fieldErrors.commitmentWhy ? 'has-error' : ''}`} name="commitmentWhy" style={{ minHeight: '100px' }} onChange={() => clearFieldError('commitmentWhy')}></textarea>
+                    {fieldErrors.commitmentWhy ? <div className="field-error">{fieldErrors.commitmentWhy}</div> : null}
+                  </div>
                 </div>
 
                 <div className={`form-section ${activeStep === 6 ? 'active' : ''}`} data-step="6">
-                  <div className="form-section-header"><div className="form-section-num">Section F of 6 - Declaration</div><div className="form-section-title">Make it official.</div><div className="form-section-sub">Read carefully and confirm your commitment.</div></div>
-                  <div className="declaration-box"><p className="declaration-text">"I understand that Remarkable '26 is a 12-month commitment. I agree to show up consistently, engage with honesty and integrity, complete monthly assignments, support my peers, and give my absolute best to this journey. I understand that if I am selected, my spot represents an opportunity denied to someone else - and I will honour that."</p></div>
-                  <label className="form-checkbox-wrap"><input type="checkbox" checked={agreed} onChange={(e) => { setAgreed(e.target.checked); clearFieldError('declarationAgreed') }} /><span className="form-checkbox-label">I have read, understood, and agree to the above declaration. I am ready to begin.</span></label>
+                  <div className="form-section-header"><div className="form-section-num">SECTION F — Declaration</div><div className="form-section-title">Read carefully before signing</div></div>
+                  <div className="declaration-box"><p className="declaration-text">I understand that Remarkable &apos;26 is a 12-month commitment. I agree to show up consistently, engage with honesty and integrity, complete monthly assignments, support my peers, and give my absolute best to this journey. I understand that if I am selected, my spot represents an opportunity denied to someone else — and I will honour that.</p></div>
+                  <label className="form-checkbox-wrap"><input type="checkbox" checked={agreed} onChange={(e) => { setAgreed(e.target.checked); clearFieldError('declarationAgreed') }} /><span className="form-checkbox-label">I agree and I am ready.</span></label>
                   {fieldErrors.declarationAgreed ? <div className="field-error" style={{ marginTop: '8px' }}>{fieldErrors.declarationAgreed}</div> : null}
-                  <div className="declaration-box" style={{ marginTop: '24px' }}>
-                    <div className="video-guidelines-title">Key Dates to Remember</div>
-                    <div className="sched-item"><div className="sched-name">Application Deadline</div><div className="sched-name" style={{ marginLeft: 'auto' }}>March 31, 2026</div></div>
-                    <div className="sched-item"><div className="sched-name">Notifications Sent</div><div className="sched-name" style={{ marginLeft: 'auto' }}>April 10, 2026</div></div>
-                    <div className="sched-item"><div className="sched-name">Launch Event</div><div className="sched-name" style={{ marginLeft: 'auto', color: 'var(--ember-light)' }}>April 18, 2026 · Lagos</div></div>
+                  <div className="form-row form-sign-row" style={{ marginTop: '24px' }}>
+                    <div className="form-field"><label className="form-label">Full Name <span>*</span></label><input className={`form-input ${fieldErrors.signFullName ? 'has-error' : ''}`} name="signFullName" type="text" autoComplete="name" onChange={() => clearFieldError('signFullName')} />{fieldErrors.signFullName ? <div className="field-error">{fieldErrors.signFullName}</div> : null}</div>
+                    <div className="form-field"><label className="form-label">Date <span>*</span></label><input className={`form-input ${fieldErrors.signDate ? 'has-error' : ''}`} name="signDate" type="date" onChange={() => clearFieldError('signDate')} />{fieldErrors.signDate ? <div className="field-error">{fieldErrors.signDate}</div> : null}</div>
                   </div>
-                  <div style={{ textAlign: 'center', marginTop: '40px' }}><button type="button" className="form-btn-submit" onClick={submitForm} disabled={isSubmitting}>{isSubmitting ? 'Submitting...' : 'Submit My Application ->'}</button><p className="form-hint" style={{ marginTop: '16px' }}>Applications are reviewed individually. Only 50 spots available.</p></div>
+                  <div className="form-footer-tag">REMARKABLE &apos;26 — For those who refused to be ordinary.</div>
+                  <div className="declaration-box" style={{ marginTop: '24px' }}>
+                    <div className="video-guidelines-title">Key dates</div>
+                    <div className="sched-item"><div className="sched-name">Applications close</div><div className="sched-name" style={{ marginLeft: 'auto' }}>April 8, 2026</div></div>
+                    <div className="sched-item"><div className="sched-name">Notifications</div><div className="sched-name" style={{ marginLeft: 'auto' }}>April 10, 2026</div></div>
+                    <div className="sched-item"><div className="sched-name">Launch</div><div className="sched-name" style={{ marginLeft: 'auto', color: 'var(--ember-light)' }}>April 18, 2026 · Lagos</div></div>
+                  </div>
+                  <div style={{ textAlign: 'center', marginTop: '40px' }}><button type="button" className="form-btn-submit" onClick={submitForm} disabled={isSubmitting}>{isSubmitting ? 'Submitting...' : 'Submit application'}</button><p className="form-hint" style={{ marginTop: '16px' }}>Applications are reviewed individually. Only 50 spots available.</p></div>
                 </div>
 
                 <div className="form-nav">
@@ -727,7 +932,7 @@ function App() {
       <div className="dates-bar">
         <div className="dates-inner">
           <div className="date-item"><div className="date-milestone">Applications Open</div><div className="date-val">Now</div></div>
-          <div className="date-item"><div className="date-milestone">Deadline</div><div className="date-val">March 31, 2026</div></div>
+          <div className="date-item"><div className="date-milestone">Deadline</div><div className="date-val">April 8, 2026</div></div>
           <div className="date-item"><div className="date-milestone">Notifications</div><div className="date-val">April 10, 2026</div></div>
           <div className="date-item"><div className="date-milestone">Launch Event</div><div className="date-val">April 18, 2026</div></div>
           <div className="date-item"><div className="date-milestone">Program Ends</div><div className="date-val">April 2027</div></div>
@@ -748,6 +953,7 @@ function App() {
               <li><a href="#program">The Program</a></li>
               <li><a href="#event">Launch Event</a></li>
               <li><a href="#mentor">Your Mentor</a></li>
+              <li><a href="#stories">Stories</a></li>
               <li><a href="#apply">Apply Now</a></li>
             </ul>
           </div>
@@ -755,7 +961,7 @@ function App() {
             <div className="footer-col-title">Key Dates</div>
             <ul className="footer-date-list">
               <li><span className="fdl-label">Applications Open</span><span className="fdl-val">Now</span></li>
-              <li><span className="fdl-label">Deadline</span><span className="fdl-val">Mar 31, 2026</span></li>
+              <li><span className="fdl-label">Deadline</span><span className="fdl-val">Apr 8, 2026</span></li>
               <li><span className="fdl-label">Notifications</span><span className="fdl-val">Apr 10, 2026</span></li>
               <li><span className="fdl-label">Launch Event</span><span className="fdl-val">Apr 18, 2026</span></li>
               <li><span className="fdl-label">Program Ends</span><span className="fdl-val">Apr 2027</span></li>
@@ -764,7 +970,7 @@ function App() {
         </div>
         <div className="footer-bottom">
           <div className="footer-copy">© 2026 Remarkable Mentorship Program. All rights reserved.</div>
-          <div className="footer-tagline">Designed with intention. Built for impact.</div>
+          <div className="footer-tagline">REMARKABLE &apos;26 — For those who refused to be ordinary. Applications close April 8, 2026.</div>
         </div>
       </footer>
     </>

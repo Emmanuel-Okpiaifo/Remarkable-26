@@ -32,6 +32,8 @@ const SHEET_NAME = 'Applications';
 
 const HEADERS = [
   'submittedAt',
+  'firstName',
+  'lastName',
   'fullName',
   'age',
   'gender',
@@ -47,6 +49,7 @@ const HEADERS = [
   'satisfactionScore',
   'satisfactionWhy',
   'gap',
+  'burningQuestion',
   'vision',
   'ordinaryWhen',
   'videoFileName',
@@ -56,7 +59,10 @@ const HEADERS = [
   'commitmentWhy',
   'hearAbout',
   'referrer',
-  'declarationAgreed'
+  'hearOtherSpecify',
+  'declarationAgreed',
+  'signFullName',
+  'signDate',
 ];
 
 function getSheet_() {
