@@ -1,50 +1,67 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import mentorImage from './assets/Ade (2).jpg'
+import testimonialImgEmmanuel from './assets/Img/Emmanuel Okpiaifo.jpg'
+import testimonialImgRaymond from './assets/Img/Raymond Nwachukwu.jpg'
+import testimonialImgGoodnews from './assets/Img/Goodnews Stephen.jpg'
+import testimonialImgJoel from './assets/Img/Joel Opara.jpg'
+import testimonialImgRachael from './assets/Img/Rachael Aimola.jpg'
 
-/** Placeholder photos (Unsplash). Swap `src` for your own images anytime. */
-const mentorMomentTiles = [
-  {
-    src: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=1200&q=80',
-    caption: 'Workshops & learning',
-    alt: 'People collaborating in a workshop setting',
-  },
-  {
-    src: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=1200&q=80',
-    caption: 'Cohorts & community',
-    alt: 'Team gathered around a table',
-  },
-  {
-    src: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80',
-    caption: 'Building together',
-    alt: 'Colleagues working on a project',
-  },
-  {
-    src: 'https://images.unsplash.com/photo-1544531586-fde5298cef13?auto=format&fit=crop&w=1200&q=80',
-    caption: 'On stage & in the room',
-    alt: 'Speaker addressing an audience',
-  },
-]
+/** All images in `src/assets/Img/Ade's work/` (jpg/png), sorted by filename. */
+const adeWorkModules = import.meta.glob("./assets/Img/Ade's work/*.{jpg,JPG,jpeg,png,webp}", {
+  eager: true,
+  query: '?url',
+  import: 'default',
+})
+const mentorMomentTiles = Object.keys(adeWorkModules)
+  .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
+  .map((path) => adeWorkModules[path])
 
+const MOMENTS_INITIAL_COUNT = 3
+
+/** { quote, name, image } — `image` optional (initials fallback). Headshots: `src/assets/Img/`. */
 const testimonials = [
   {
     quote:
-      "Ade has a rare gift: he sees the person behind the title. That shifted how I think about leadership and how I show up for my team.",
-    role: 'Senior manager',
-    place: 'Lagos',
+      "Meeting Mr. Ade Olowojoba was a turning point in my career. His mentorship reshaped how I think about growth, discipline, and positioning, helping me approach my work with clarity, intention, and long-term vision.",
+    name: 'Emmanuel Okpaifo',
+    image: testimonialImgEmmanuel,
   },
   {
     quote:
-      "I came in scattered; I left with a plan. The accountability and clarity — not fluff — are what I needed at my stage.",
-    role: 'Founder',
-    place: 'Nigeria',
+      "Meeting Mr. Ade in 2020 was a turning point in my professional journey. More than an employer, he is a big brother and a visionary mentor who has taught me the mechanics of growth and strategic thinking. I'm incredibly lucky to be learning under his guidance.",
+    name: 'Raymond Nwachukwu',
+    image: testimonialImgRaymond,
   },
   {
     quote:
-      "This is strategy you can execute the next day. Direct, practical, and deeply personal — exactly what mentoring should feel like.",
-    role: 'Professional',
-    place: 'Abuja',
+      'Working with Ade Olowojoba was a defining season of growth for me. His mentorship sharpened my skills in grant writing and program management, built my confidence, and opened real opportunities. He leads with clarity and genuinely creates room for others to grow and excel.',
+    name: 'Goodnews Stephen',
+    image: testimonialImgGoodnews,
+  },
+  {
+    quote:
+      "I used the Growth Blueprint & Planner by Mr Ade to plan my 2026, and it was deeply self-reflective. The questions challenged me, uncovered hidden blocks, and gave me clarity across my career, business, finances, relationships, and personal growth. Even in a short time of knowing him, I've gained valuable insight and direction.",
+    name: 'Joel Opara',
+    image: testimonialImgJoel,
+  },
+  {
+    quote:
+      "A leader who doesn't just manage, but mentors. I'm grateful to have a boss like Ade who is also a mentor. His support, honesty, and guidance have helped me grow professionally, think more strategically, and believe more in my abilities.",
+    name: 'Rachael Aimola',
+    image: testimonialImgRachael,
   },
 ]
+
+function testimonialInitials(name) {
+  const parts = String(name)
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+  }
+  return (parts[0]?.[0] || '?').toUpperCase()
+}
 
 const totalSteps = 6
 const SUBMIT_URL = '/api/submit'
@@ -69,6 +86,15 @@ function App() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formMessage, setFormMessage] = useState(null)
   const [fieldErrors, setFieldErrors] = useState({})
+  const [momentsExpanded, setMomentsExpanded] = useState(false)
+  const [lightboxSrc, setLightboxSrc] = useState(null)
+  const momentsGridRef = useRef(null)
+  const wasMomentsExpandedRef = useRef(momentsExpanded)
+
+  const visibleMoments = momentsExpanded
+    ? mentorMomentTiles
+    : mentorMomentTiles.slice(0, MOMENTS_INITIAL_COUNT)
+  const hasMoreMoments = mentorMomentTiles.length > MOMENTS_INITIAL_COUNT
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
@@ -76,11 +102,36 @@ function App() {
   }, [theme])
 
   useEffect(() => {
-    document.body.style.overflow = menuOpen ? 'hidden' : ''
+    document.body.style.overflow = menuOpen || lightboxSrc ? 'hidden' : ''
     return () => {
       document.body.style.overflow = ''
     }
-  }, [menuOpen])
+  }, [menuOpen, lightboxSrc])
+
+  useEffect(() => {
+    if (!lightboxSrc) return undefined
+    const onKey = (e) => {
+      if (e.key === 'Escape') setLightboxSrc(null)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [lightboxSrc])
+
+  useEffect(() => {
+    const was = wasMomentsExpandedRef.current
+    wasMomentsExpandedRef.current = momentsExpanded
+    if (was === momentsExpanded) return
+    const grid = momentsGridRef.current
+    if (!grid) return
+    const t = window.setTimeout(() => {
+      if (!was && momentsExpanded) {
+        grid.querySelector('.moment-card:nth-child(4)')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      } else if (was && !momentsExpanded) {
+        grid.querySelector('.moment-card:nth-child(1)')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }, 120)
+    return () => window.clearTimeout(t)
+  }, [momentsExpanded])
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 60)
@@ -667,7 +718,7 @@ function App() {
         </div>
       </section>
 
-      <section className="moments-section" id="stories" aria-labelledby="moments-heading">
+      <section className="moments-section moments-section-scroll" id="stories" aria-labelledby="moments-heading">
         <div className="moments-section-glow" aria-hidden="true" />
         <div className="inner moments-inner">
           <div className="eyebrow reveal">In the room</div>
@@ -675,21 +726,84 @@ function App() {
             Moments from <em>the work</em>
           </h2>
           <p className="body-text reveal" style={{ maxWidth: '560px' }}>
-            Mentoring shows up in rooms — stages, cohorts, and partner programs. Placeholder photos below; swap them for your own shots anytime.
+            Mentoring shows up in rooms — stages, cohorts, and partner programs. A few moments from the field.
           </p>
-          <div className="moments-grid reveal">
-            {mentorMomentTiles.map((tile, i) => (
-              <figure className={`moment-card ${i === 0 ? 'moment-card--lead' : ''}`} key={tile.src}>
+          <div
+            ref={momentsGridRef}
+            className="moments-grid reveal"
+            aria-label="Photos from programs and events"
+          >
+            {visibleMoments.map((src) => (
+              <button
+                type="button"
+                className="moment-card"
+                key={src}
+                onClick={() => setLightboxSrc(src)}
+                aria-label="Open image fullscreen"
+              >
                 <div className="moment-card-shine" aria-hidden="true" />
-                <img src={tile.src} alt={tile.alt} loading="lazy" decoding="async" />
-                <figcaption className="moment-caption">
-                  <span className="moment-caption-text">{tile.caption}</span>
-                </figcaption>
-              </figure>
+                <img src={src} alt="" loading="lazy" decoding="async" />
+              </button>
             ))}
           </div>
+          {hasMoreMoments && !momentsExpanded ? (
+            <div className="moments-preload" aria-hidden="true">
+              {mentorMomentTiles.slice(MOMENTS_INITIAL_COUNT).map((src) => (
+                <img
+                  key={`preload-${src}`}
+                  src={src}
+                  alt=""
+                  width={1}
+                  height={1}
+                  loading="eager"
+                  decoding="async"
+                  fetchPriority="low"
+                />
+              ))}
+            </div>
+          ) : null}
+          {hasMoreMoments ? (
+            <div className="moments-actions reveal">
+              <button
+                type="button"
+                className={`btn-ghost moments-toggle ${momentsExpanded ? 'moments-toggle--less' : 'moments-toggle--more'}`}
+                onClick={() => setMomentsExpanded((v) => !v)}
+                aria-expanded={momentsExpanded}
+              >
+                {momentsExpanded ? 'View less' : 'View more'}
+              </button>
+            </div>
+          ) : null}
         </div>
       </section>
+
+      {lightboxSrc ? (
+        <div
+          className="moment-lightbox"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Fullscreen photo"
+          onClick={() => setLightboxSrc(null)}
+        >
+          <button
+            type="button"
+            className="moment-lightbox-close"
+            onClick={(e) => {
+              e.stopPropagation()
+              setLightboxSrc(null)
+            }}
+            aria-label="Close fullscreen image"
+          >
+            ×
+          </button>
+          <img
+            className="moment-lightbox-img"
+            src={lightboxSrc}
+            alt=""
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      ) : null}
 
       <section className="testimonials-section" id="voices" aria-labelledby="voices-heading">
         <div className="testimonials-section-glow" aria-hidden="true" />
@@ -703,19 +817,21 @@ function App() {
           </p>
           <div className="testimonials-grid reveal">
             {testimonials.map((t, i) => (
-              <blockquote className={`testimonial-card testimonial-card--${(i % 3) + 1}`} key={i}>
-                <span className="testimonial-mark" aria-hidden="true">
-                  “
-                </span>
-                <p className="testimonial-quote">{t.quote}</p>
-                <footer className="testimonial-source">
-                  <span className="testimonial-avatar" aria-hidden="true" />
-                  <span className="testimonial-meta">
-                    <strong>{t.role}</strong>
-                    {t.place ? ` · ${t.place}` : ''}
-                  </span>
-                </footer>
-              </blockquote>
+              <div className="testimonial-shell" key={`${t.name}-${i}`}>
+                <blockquote className="testimonial-card">
+                  <div className="testimonial-avatar-ring" aria-hidden="true">
+                    {t.image ? (
+                      <img src={t.image} alt="" />
+                    ) : (
+                      <span className="testimonial-avatar-initials">{testimonialInitials(t.name)}</span>
+                    )}
+                  </div>
+                  <div className="testimonial-card-inner">
+                    <p className="testimonial-quote">{t.quote}</p>
+                    <cite className="testimonial-name">{t.name}</cite>
+                  </div>
+                </blockquote>
+              </div>
             ))}
           </div>
         </div>
