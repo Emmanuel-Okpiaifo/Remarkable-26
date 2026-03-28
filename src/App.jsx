@@ -782,10 +782,10 @@ function App() {
             className="moments-grid reveal"
             aria-label="Photos from programs and events"
           >
-            {visibleMoments.map((src) => (
+            {visibleMoments.map((src, i) => (
               <button
                 type="button"
-                className="moment-card"
+                className={`moment-card${i === 0 ? ' moment-card--first-photo' : ''}`}
                 key={src}
                 onClick={() => setLightboxSrc(src)}
                 aria-label="Open image fullscreen"
@@ -846,7 +846,7 @@ function App() {
             ×
           </button>
           <img
-            className="moment-lightbox-img"
+            className={`moment-lightbox-img${lightboxSrc === mentorMomentTiles[0] ? ' moment-lightbox-img--rotated' : ''}`}
             src={lightboxSrc}
             alt=""
             onClick={(e) => e.stopPropagation()}

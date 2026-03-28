@@ -972,6 +972,7 @@ section {
   height: 100%;
   object-fit: cover;
   object-position: center top;
+  image-orientation: from-image;
 }
 
 .mentor-role {
@@ -1005,6 +1006,10 @@ section {
 
 .mentor-bio-actions {
   margin-top: 20px;
+}
+
+.mentor-bio-block + .mentor-pull {
+  margin-top: 48px;
 }
 
 .mentor-attribution {
@@ -1274,12 +1279,22 @@ button.moment-card:focus-visible {
   height: 100%;
   object-fit: cover;
   object-position: center;
+  image-orientation: from-image;
   transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
   pointer-events: none;
 }
 
+.moment-card--first-photo img {
+  transform: rotate(90deg) scale(1.38);
+  transform-origin: center center;
+}
+
 .moment-card:hover img {
   transform: scale(1.04);
+}
+
+.moment-card--first-photo:hover img {
+  transform: rotate(90deg) scale(1.44);
 }
 
 .moment-card-shine {
@@ -1365,9 +1380,16 @@ button.moment-card:focus-visible {
   width: auto;
   height: auto;
   object-fit: contain;
+  image-orientation: from-image;
   border-radius: var(--radius-sm);
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
   cursor: default;
+}
+
+.moment-lightbox-img--rotated {
+  transform: rotate(90deg);
+  max-width: min(88vh, 900px);
+  max-height: min(92vw, 1400px);
 }
 
 .moment-lightbox-close {
