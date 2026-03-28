@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
-import mentorImage from './assets/Ade (2).jpg'
-import testimonialImgEmmanuel from './assets/Img/Emmanuel Okpiaifo.jpg'
-import testimonialImgRaymond from './assets/Img/Raymond Nwachukwu.jpg'
-import testimonialImgGoodnews from './assets/Img/Goodnews Stephen.jpg'
-import testimonialImgJoel from './assets/Img/Joel Opara.jpg'
-import testimonialImgRachael from './assets/Img/Rachael Aimola.jpg'
+import mentorImage from './assets/Ade (2).webp'
+import testimonialImgEmmanuel from './assets/Img/Emmanuel Okpiaifo.webp'
+import testimonialImgRaymond from './assets/Img/Raymond Nwachukwu.webp'
+import testimonialImgGoodnews from './assets/Img/Goodnews Stephen.webp'
+import testimonialImgJoel from './assets/Img/Joel Opara.webp'
+import testimonialImgRachael from './assets/Img/Rachael Aimola.webp'
 
-/** All images in `src/assets/Img/Ade's work/` (jpg/png), sorted by filename. */
-const adeWorkModules = import.meta.glob("./assets/Img/Ade's work/*.{jpg,JPG,jpeg,png,webp}", {
+/** All WebP images in `src/assets/Img/Ade's work/`, sorted by filename. */
+const adeWorkModules = import.meta.glob("./assets/Img/Ade's work/*.webp", {
   eager: true,
   query: '?url',
   import: 'default',
@@ -17,6 +17,34 @@ const mentorMomentTiles = Object.keys(adeWorkModules)
   .map((path) => adeWorkModules[path])
 
 const MOMENTS_INITIAL_COUNT = 3
+
+const MENTOR_BIO_SPLIT_PHRASE =
+  'an organization committed to creating access to skills and opportunities for marginalized African youth and women.'
+
+const MENTOR_BIO_FULL = `Ademulegun (Ade') Olowojoba is a serial entrepreneur, human capital development expert and social innovator with over a decade of experience building people and organisations, designing programmes, and advising governments and institutions on youth employment, entrepreneurship development, digital skills, and workforce development across Nigeria and Africa.
+
+He is the Founding Partner and CEO of NerdzFactory Company, a leading Social Innovation and Human Capital Development Company that he started from his room in Lagos in 2017 with less than USD 100 in capital. What began as a lean startup has grown into a pan-African organisation that has reached over 100,000 young people with digital skills, workforce development, and entrepreneurship programmes, working with leading institutions including The World Bank Group, The United Nations, The United States Africa Development Foundation, UK Government, German Development Corporation, The Nigerian Presidency, Meta, Google, Mastercard Foundation, British Council, King's Trust International, Raspberry Pi Foundation and a host of others. He is also the founder of NerdzFactory Foundation, an organization committed to creating access to skills and opportunities for marginalized African youth and women.
+
+Before founding NerdzFactory, Ade' built his expertise at the intersection of technology, human capital, and public policy. He managed Community Affairs and Youth Employment initiatives for Microsoft Nigeria, where he managed the Lagos-Andela Open Skilling Programme, one of Nigeria's earliest technology upskilling programs. He subsequently served as the pioneer Project Lead for CodeLagos, a first-of-its-kind government initiative in Africa which aimed to train one million Lagosians to code, overseeing the establishment of over 300 coding centres across schools, universities, and public spaces in Lagos State.
+
+He also worked with the Ondo State and Edo State Governments on human capital and innovation initiatives, serving as the pioneer Director for Human Capital Development under Ondo State's Office of Innovation and Partnerships. He has also collaborated with The Federal Government of Nigeria, Lagos State, Bayelsa State, Oyo State, Ekiti State, Kwara State, Ogun State, Asia State, Anambra State, Kano State to mention a few on teacher development, skills development and digital economy programmes - bringing private sector rigour to public sector challenges.
+
+At the international level, Ade' has represented Nigeria and Africa in some of the world's most significant forums. In 2019, he spoke at the Paris Peace Forum in France, sharing the stage with African Billionaire and Philanthropist, Mo Ibrahim, the President of the United Nations General Assembly Tijani Mohammed Bande, the Executive Director of the International Trade Centre Arancha Gonzalez, and the Former President of Burundi, Late Pierre Buoyaya. In 2020, he moderated a high-level session on education systems and COVID-19, hosting former Italian Prime Minister Enrico Letta and Former Malian President Sheikh Modibo Diarra.
+
+Between 2018 and 2021, he served as a Youth and Education Expert at the African Union-European Union Youth Cooperation Hub, providing advisory and monitoring support for a EUR 10 million initiative implemented concurrently in Mali and Spain.
+
+Beyond NerdzFactory, Ade' is a builder of people, platforms and communities. He founded BizGrowthAfrica, a platform for African entrepreneurs and SMEs, and GrowthPath, a personal development brand through which he creates frameworks, accelerator programmes, newsletters, and content for ambitious individuals committed to intentional growth. He also founded Faith & Business, a community for Christian entrepreneurs who believe that purpose and commerce are partners, not opposites.
+
+He is currently based in Winnipeg, Canada, where he lives with his wife, Oluwadamilola and his two kids, Oluwatomike and Oluwatimisire while continuing to lead organisations and build initiatives that are actively shaping the future of Nigeria and Africa.
+
+Through Remarkable, Ade' is making the kind of learnings that shaped his own trajectory directly accessible to fifty carefully selected professionals and entrepreneurs who are ready to do the work. His approach is direct, practical, and deeply personal.`
+
+const mentorBioSplitIndex = MENTOR_BIO_FULL.indexOf(MENTOR_BIO_SPLIT_PHRASE)
+const MENTOR_BIO_LEAD =
+  mentorBioSplitIndex >= 0 ? MENTOR_BIO_FULL.slice(0, mentorBioSplitIndex) : MENTOR_BIO_FULL
+const MENTOR_BIO_REST =
+  mentorBioSplitIndex >= 0 ? MENTOR_BIO_FULL.slice(mentorBioSplitIndex) : ''
+const mentorBioRestParagraphs = MENTOR_BIO_REST.split(/\n\n+/).map((p) => p.trim()).filter(Boolean)
 
 /** { quote, name, image } — `image` optional (initials fallback). Headshots: `src/assets/Img/`. */
 const testimonials = [
@@ -88,6 +116,7 @@ function App() {
   const [fieldErrors, setFieldErrors] = useState({})
   const [momentsExpanded, setMomentsExpanded] = useState(false)
   const [lightboxSrc, setLightboxSrc] = useState(null)
+  const [mentorBioExpanded, setMentorBioExpanded] = useState(false)
   const momentsGridRef = useRef(null)
   const wasMomentsExpandedRef = useRef(momentsExpanded)
 
@@ -514,7 +543,6 @@ function App() {
         <div className="stats-inner">
           <div className="stat-item"><div className="stat-val">50</div><div className="stat-label">Selected Mentees</div></div>
           <div className="stat-item"><div className="stat-val">12</div><div className="stat-label">Months Duration</div></div>
-          <div className="stat-item"><div className="stat-val">3</div><div className="stat-label">Mentorship Tracks</div></div>
           <div className="stat-item"><div className="stat-val">100%</div><div className="stat-label">Free to Attend</div></div>
           <div className="stat-item"><div className="stat-val">12</div><div className="stat-label">Monthly Sessions</div></div>
           <div className="stat-item"><div className="stat-val">1</div><div className="stat-label">Cohort Per Year</div></div>
@@ -661,17 +689,38 @@ function App() {
 
       <section className="mentor-section" id="mentor">
         <div className="inner">
-          <div className="eyebrow reveal">Your Lead Mentor</div>
+          <div className="eyebrow reveal">Profile</div>
           <div className="mentor-grid reveal">
             <div className="mentor-photo">
               <img src={mentorImage} alt="Ade' Olowojoba" />
             </div>
             <div>
-              <div className="mentor-name">Ade' Olowojoba</div>
-              <div className="mentor-role">Serial Entrepreneur · Social Innovator · Mentor</div>
-              <p className="mentor-bio">Ademulegun (Ade') Olowojoba is a Nigerian serial entrepreneur and social innovator. He founded NerdzFactory Company in 2017 from his room with a capital of NGN 25,000 and has grown it into a leading social innovation center in Nigeria — with a team of 20+ operating across 3 continents. Under his leadership, NerdzFactory has reached over 30,000 young people through digital skills, entrepreneurship, and workforce development programs in partnership with Meta, UNDP, Mastercard Foundation, British Council, GIZ, and others.</p>
-              <p className="mentor-bio">Prior to his entrepreneurial journey, Ade' worked in corporate Nigeria — managing Community Affairs at Microsoft, serving as Pioneer Project Lead for CodeLagos, and briefly serving as a Director in the Ondo State Government. He is based in Canada with his family while actively leading businesses that are transforming the future of Nigeria and Africa.</p>
-              <p className="mentor-bio">Through Remarkable, Ade' is making the kind of mentorship that shaped his own trajectory accessible to 50 carefully selected individuals who are ready to do the work. His approach is direct, practical, and deeply personal.</p>
+              <div className="mentor-name">Lead Mentor — Ade&apos; Olowojoba</div>
+              <div className="mentor-role">Serial Entrepreneur · Social Innovator</div>
+              <div className="mentor-bio-block">
+                <p className="mentor-bio">{MENTOR_BIO_LEAD}</p>
+                {mentorBioExpanded ? (
+                  <div className="mentor-bio-expanded">
+                    {mentorBioRestParagraphs.map((para, i) => (
+                      <p key={i} className="mentor-bio">
+                        {para}
+                      </p>
+                    ))}
+                  </div>
+                ) : null}
+                {MENTOR_BIO_REST ? (
+                  <div className="mentor-bio-actions">
+                    <button
+                      type="button"
+                      className={`btn-ghost moments-toggle mentor-bio-toggle ${mentorBioExpanded ? 'moments-toggle--less' : 'moments-toggle--more'}`}
+                      onClick={() => setMentorBioExpanded((v) => !v)}
+                      aria-expanded={mentorBioExpanded}
+                    >
+                      {mentorBioExpanded ? 'Read less' : 'Read more'}
+                    </button>
+                  </div>
+                ) : null}
+              </div>
               <blockquote className="mentor-pull">"The version of you that is possible is not a fantasy. It is a decision. Remarkable exists to help you make that decision — and then execute on it, every single month, for a year."</blockquote>
               <div className="mentor-attribution">— Ade' Olowojoba</div>
             </div>
@@ -687,8 +736,8 @@ function App() {
             </p>
             <div className="mentor-stats">
               <div className="mentor-stat mentor-stat--a">
-                <span className="mentor-stat-val">30k+</span>
-                <span className="mentor-stat-label">Young people reached via NerdzFactory programs</span>
+                <span className="mentor-stat-val">100k+</span>
+                <span className="mentor-stat-label">Young people reached via NerdzFactory programmes</span>
               </div>
               <div className="mentor-stat mentor-stat--b">
                 <span className="mentor-stat-val">CodeLagos</span>
@@ -705,7 +754,7 @@ function App() {
             </div>
             <ul className="mentor-track-list">
               <li>
-                Scaled NerdzFactory from a room and NGN 25,000 into a leading social innovation centre — digital skills, entrepreneurship, and workforce development at real scale.
+                Scaled NerdzFactory from a room with under USD 100 into a pan-African organisation — over 100,000 young people reached with digital skills, workforce development, and entrepreneurship programmes.
               </li>
               <li>
                 Corporate chapter: Community Affairs at Microsoft Nigeria; later a director in Ondo State Government — bridging public purpose and private-sector execution.

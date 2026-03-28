@@ -527,7 +527,7 @@ nav.scrolled {
 }
 
 .stats-inner {
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(5, 1fr);
 }
 
 .stat-item {
@@ -993,6 +993,18 @@ section {
   line-height: 1.95;
   max-width: 580px;
   margin-bottom: 16px;
+}
+
+.mentor-bio-block {
+  max-width: 580px;
+}
+
+.mentor-bio-expanded .mentor-bio:last-child {
+  margin-bottom: 0;
+}
+
+.mentor-bio-actions {
+  margin-top: 20px;
 }
 
 .mentor-attribution {
