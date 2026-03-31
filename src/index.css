@@ -370,6 +370,10 @@ nav.scrolled {
   overflow: hidden;
 }
 
+.insights-hero {
+  min-height: 76vh;
+}
+
 .hero-radial {
   position: absolute;
   inset: 0;
@@ -442,6 +446,10 @@ nav.scrolled {
   margin-bottom: 56px;
 }
 
+.section-cta {
+  margin-top: 34px;
+}
+
 .btn-primary,
 .btn-ghost {
   display: inline-flex;
@@ -489,6 +497,8 @@ nav.scrolled {
   padding: 14px 28px;
   border: 1px solid rgba(196, 98, 45, 0.15);
   border-right: none;
+  background: rgba(255, 255, 255, 0.68);
+  backdrop-filter: blur(4px);
   text-align: center;
   transition: transform 0.25s ease, border-color 0.25s ease, background-color 0.25s ease;
 }
@@ -496,7 +506,7 @@ nav.scrolled {
 .trust-badge:hover {
   transform: translateY(-2px);
   border-color: rgba(196, 98, 45, 0.35);
-  background: rgba(196, 98, 45, 0.04);
+  background: rgba(196, 98, 45, 0.1);
 }
 
 .trust-badge:last-child {
@@ -515,8 +525,16 @@ nav.scrolled {
   font-size: 0.6rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: #6a4d3b;
   line-height: 1.35;
+}
+
+:root[data-theme='dark'] .trust-badge {
+  background: rgba(18, 16, 14, 0.62);
+}
+
+:root[data-theme='dark'] .trust-badge-label {
+  color: #cfb9a7;
 }
 
 .stats-inner,
@@ -841,6 +859,25 @@ section {
   margin-top: 64px;
 }
 
+.event-title-focus {
+  font-size: clamp(2.2rem, 5.2vw, 4rem);
+}
+
+.event-wrap-spotlight {
+  position: relative;
+  border: 1px solid var(--accent-soft);
+  box-shadow: var(--shadow-lift);
+}
+
+.event-wrap-spotlight::before {
+  content: '';
+  position: absolute;
+  inset: -24px;
+  z-index: -1;
+  background: radial-gradient(ellipse at center, rgba(196, 98, 45, 0.2), transparent 70%);
+  filter: blur(24px);
+}
+
 .event-left {
   background: var(--ink-3);
   padding: 46px 40px;
@@ -919,11 +956,19 @@ section {
   margin-top: 64px;
 }
 
+.mentor-grid-compact {
+  gap: 56px;
+}
+
 .elig-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 4px;
   margin-top: 64px;
+}
+
+.elig-grid-single {
+  grid-template-columns: 1fr;
 }
 
 .elig-card {
@@ -998,6 +1043,10 @@ section {
 
 .mentor-bio-block {
   max-width: 580px;
+}
+
+.mentor-bio-preview {
+  max-width: 720px;
 }
 
 .mentor-bio-expanded .mentor-bio:last-child {

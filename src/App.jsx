@@ -45,6 +45,8 @@ const MENTOR_BIO_LEAD =
 const MENTOR_BIO_REST =
   mentorBioSplitIndex >= 0 ? MENTOR_BIO_FULL.slice(mentorBioSplitIndex) : ''
 const mentorBioRestParagraphs = MENTOR_BIO_REST.split(/\n\n+/).map((p) => p.trim()).filter(Boolean)
+const mentorBioParagraphs = MENTOR_BIO_FULL.split(/\n\n+/).map((p) => p.trim()).filter(Boolean)
+const mentorBioPreview = mentorBioParagraphs.slice(0, 2)
 
 /** { quote, name, image } — `image` optional (initials fallback). Headshots: `src/assets/Img/`. */
 const testimonials = [
@@ -96,11 +98,7 @@ const SUBMIT_URL = '/api/submit'
 const DEV_APPS_SCRIPT_URL = String(import.meta.env.VITE_APPS_SCRIPT_URL || '').trim()
 
 function App() {
-  const [theme, setTheme] = useState(() => {
-    const savedTheme = window.localStorage.getItem('remarkable-theme')
-    if (savedTheme === 'light' || savedTheme === 'dark') return savedTheme
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-  })
+  const [theme, setTheme] = useState('light')
   const [menuOpen, setMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const [activeStep, setActiveStep] = useState(1)
@@ -116,7 +114,9 @@ function App() {
   const [fieldErrors, setFieldErrors] = useState({})
   const [momentsExpanded, setMomentsExpanded] = useState(false)
   const [lightboxSrc, setLightboxSrc] = useState(null)
-  const [mentorBioExpanded, setMentorBioExpanded] = useState(false)
+  const [currentPage, setCurrentPage] = useState(() =>
+    window.location.hash.startsWith('#insights') ? 'insights' : 'home',
+  )
   const momentsGridRef = useRef(null)
   const wasMomentsExpandedRef = useRef(momentsExpanded)
 
@@ -127,7 +127,6 @@ function App() {
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
-    window.localStorage.setItem('remarkable-theme', theme)
   }, [theme])
 
   useEffect(() => {
@@ -170,6 +169,22 @@ function App() {
   }, [])
 
   useEffect(() => {
+    const onHashChange = () => {
+      setCurrentPage(window.location.hash.startsWith('#insights') ? 'insights' : 'home')
+    }
+    window.addEventListener('hashchange', onHashChange)
+    onHashChange()
+    return () => window.removeEventListener('hashchange', onHashChange)
+  }, [])
+
+  useEffect(() => {
+    setMenuOpen(false)
+    setLightboxSrc(null)
+    setMomentsExpanded(false)
+    window.scrollTo({ top: 0, behavior: 'auto' })
+  }, [currentPage])
+
+  useEffect(() => {
     const reveals = document.querySelectorAll('.reveal')
     const observer = new IntersectionObserver(
       (entries) => {
@@ -192,6 +207,25 @@ function App() {
       window.scrollTo({ top: apply.offsetTop - 80, behavior: 'smooth' })
     }
   }
+
+  const navLinks =
+    currentPage === 'insights'
+      ? [
+          { href: '#insights', label: 'Overview' },
+          { href: '#insights-calendar', label: 'Learning Calendar' },
+          { href: '#insights-bio', label: 'Convener' },
+          { href: '#insights-gallery', label: 'Gallery' },
+          { href: '#insights-faq', label: 'FAQ' },
+        ]
+      : [
+          { href: '#about', label: 'About' },
+          { href: '#pillars', label: 'Framework' },
+          { href: '#mentor', label: 'Convener' },
+          { href: '#event', label: 'Launch Event' },
+          { href: '#eligibility', label: 'Eligibility' },
+          { href: '#stories', label: 'Stories' },
+          { href: '#insights', label: 'Inside Remarkable' },
+        ]
 
   const getFormData = () => {
     const form = document.getElementById('applicationForm')
@@ -459,14 +493,13 @@ function App() {
         </div>
         <div className="nav-right">
           <div className="nav-links">
-            <a href="#about">About</a>
-            <a href="#program">Program</a>
-            <a href="#event">Launch Event</a>
-            <a href="#mentor">Mentor</a>
-            <a href="#stories">Stories</a>
-            <a href="#apply" className="nav-apply">
-              Apply Now
-            </a>
+            {navLinks.map((link) => (
+              <a key={link.href} href={link.href}>
+                {link.label}
+              </a>
+            ))}
+            {currentPage === 'insights' ? <a href="#home">Main Page</a> : null}
+            <a href="#apply" className="nav-apply">Register</a>
           </div>
           <button
             type="button"
@@ -490,12 +523,13 @@ function App() {
         </div>
       </nav>
       <div className={`mobile-menu ${menuOpen ? 'open' : ''}`}>
-        <a href="#about" onClick={() => setMenuOpen(false)}>About</a>
-        <a href="#program" onClick={() => setMenuOpen(false)}>Program</a>
-        <a href="#event" onClick={() => setMenuOpen(false)}>Launch Event</a>
-        <a href="#mentor" onClick={() => setMenuOpen(false)}>Mentor</a>
-        <a href="#stories" onClick={() => setMenuOpen(false)}>Stories</a>
-        <a href="#apply" className="mobile-apply" onClick={() => setMenuOpen(false)}>Apply Now</a>
+        {navLinks.map((link) => (
+          <a key={link.href} href={link.href} onClick={() => setMenuOpen(false)}>
+            {link.label}
+          </a>
+        ))}
+        {currentPage === 'insights' ? <a href="#home" onClick={() => setMenuOpen(false)}>Main Page</a> : null}
+        <a href="#apply" className="mobile-apply" onClick={() => setMenuOpen(false)}>Register</a>
         <button
           type="button"
           className="theme-toggle mobile-theme-toggle"
@@ -506,6 +540,8 @@ function App() {
         </button>
       </div>
 
+      {currentPage === 'home' ? (
+      <>
       <section className="hero" id="home">
         <div className="hero-radial"></div>
         <div className="hero-grid-bg"></div>
@@ -579,6 +615,9 @@ function App() {
               </blockquote>
             </div>
           </div>
+          <div className="section-cta reveal">
+            <a href="#apply" className="btn-primary">Register {'->'}</a>
+          </div>
         </div>
       </section>
 
@@ -623,28 +662,8 @@ function App() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      <section className="journey" id="program">
-        <div className="inner">
-          <div className="eyebrow reveal">The 12-Month Journey</div>
-          <h2 className="section-title reveal">A Year Designed to Change <em>the Trajectory of Your Life.</em></h2>
-          <div className="phases reveal">
-            <div className="phase"><div className="phase-tag">Phase 01 · April – June 2026</div><div className="phase-name">Foundation</div><div className="phase-sub">Know Yourself</div><ul className="phase-list"><li>Honest self-assessment & personal audit</li><li>Goal architecture & success mapping</li><li>Mindset renewal & belief systems</li><li>In-person launch & cohort bonding</li></ul></div>
-            <div className="phase"><div className="phase-tag">Phase 02 · July – September 2026</div><div className="phase-name">Growth</div><div className="phase-sub">Build Yourself</div><ul className="phase-list"><li>Building habits that compound</li><li>Strategic relationship development</li><li>Financial intelligence</li><li>Personal brand foundations</li></ul></div>
-            <div className="phase"><div className="phase-tag">Phase 03 · October – December 2026</div><div className="phase-name">Momentum</div><div className="phase-sub">Stretch Yourself</div><ul className="phase-list"><li>Career & business acceleration</li><li>Visibility & thought leadership</li><li>Execution & professional discipline</li><li>Navigating setbacks & resilience</li></ul></div>
-            <div className="phase"><div className="phase-tag">Phase 04 · January – April 2027</div><div className="phase-name">Legacy</div><div className="phase-sub">Establish Yourself</div><ul className="phase-list"><li>Consolidating your gains & wins</li><li>Learning to mentor and give back</li><li>Planning your next chapter</li><li>Graduation & alumni network</li></ul></div>
-          </div>
-          <div className="rhythm reveal">
-            <div className="eyebrow">Monthly Operating Rhythm</div>
-            <h3 className="section-title" style={{ fontSize: 'clamp(1.5rem,3vw,2.2rem)' }}>What Happens <em>Every Month</em></h3>
-            <div className="rhythm-grid">
-              <div className="rhythm-card"><div className="rhythm-num">01</div><div className="rhythm-title">Group Session</div><p className="rhythm-desc">90-minute live session with Ade' Olowojoba or a guest expert, covering the month's topic in depth.</p></div>
-              <div className="rhythm-card"><div className="rhythm-num">02</div><div className="rhythm-title">Peer Circles</div><p className="rhythm-desc">Small groups of 5–6 mentees meet to discuss challenges, share progress, and hold each other accountable.</p></div>
-              <div className="rhythm-card"><div className="rhythm-num">03</div><div className="rhythm-title">Personal Check-in</div><p className="rhythm-desc">A brief touchpoint with your track mentor to review your goals and receive personalized guidance.</p></div>
-              <div className="rhythm-card"><div className="rhythm-num">04</div><div className="rhythm-title">Monthly Reflection</div><p className="rhythm-desc">A guided review of wins, lessons, and commitments for the next 30 days.</p></div>
-            </div>
+          <div className="section-cta reveal">
+            <a href="#apply" className="btn-primary">Register {'->'}</a>
           </div>
         </div>
       </section>
@@ -652,9 +671,9 @@ function App() {
       <section id="event">
         <div className="inner">
           <div className="eyebrow reveal">The Launch Event</div>
-          <h2 className="section-title reveal">Where It <em>All Begins.</em></h2>
+          <h2 className="section-title reveal event-title-focus">Where It <em>All Begins.</em></h2>
           <p className="body-text reveal">The launch event is not just an orientation — it is the moment you step into a new version of yourself, surrounded by 49 other people who made the same decision you did.</p>
-          <div className="event-wrap reveal">
+          <div className="event-wrap reveal event-wrap-spotlight">
             <div className="event-left">
               <div className="schedule-title">Event Details</div>
               <div className="event-detail">
@@ -684,145 +703,36 @@ function App() {
               <div className="sched-item"><div className="sched-time">◈</div><div className="sched-name">Networking lunch with your new cohort</div></div>
             </div>
           </div>
+          <div className="section-cta reveal">
+            <a href="#apply" className="btn-primary">Register {'->'}</a>
+          </div>
         </div>
       </section>
 
       <section className="mentor-section" id="mentor">
         <div className="inner">
-          <div className="eyebrow reveal">Profile</div>
-          <div className="mentor-grid reveal">
+          <div className="eyebrow reveal">Convener</div>
+          <div className="mentor-grid reveal mentor-grid-compact">
             <div className="mentor-photo">
               <img src={mentorImage} alt="Ade' Olowojoba" />
             </div>
             <div>
-              <div className="mentor-name">Lead Mentor — Ade&apos; Olowojoba</div>
+              <div className="mentor-name">Convener — Ade&apos; Olowojoba</div>
               <div className="mentor-role">Serial Entrepreneur · Social Innovator</div>
-              <div className="mentor-bio-block">
-                <p className="mentor-bio">{MENTOR_BIO_LEAD}</p>
-                {mentorBioExpanded ? (
-                  <div className="mentor-bio-expanded">
-                    {mentorBioRestParagraphs.map((para, i) => (
-                      <p key={i} className="mentor-bio">
-                        {para}
-                      </p>
-                    ))}
-                  </div>
-                ) : null}
-                {MENTOR_BIO_REST ? (
-                  <div className="mentor-bio-actions">
-                    <button
-                      type="button"
-                      className={`btn-ghost moments-toggle mentor-bio-toggle ${mentorBioExpanded ? 'moments-toggle--less' : 'moments-toggle--more'}`}
-                      onClick={() => setMentorBioExpanded((v) => !v)}
-                      aria-expanded={mentorBioExpanded}
-                    >
-                      {mentorBioExpanded ? 'Read less' : 'Read more'}
-                    </button>
-                  </div>
-                ) : null}
+              <div className="mentor-bio-block mentor-bio-preview">
+                {mentorBioPreview.map((para, i) => (
+                  <p key={i} className="mentor-bio">
+                    {para}
+                  </p>
+                ))}
+                <div className="mentor-bio-actions">
+                  <a href="#insights-bio" className="btn-ghost moments-toggle mentor-bio-toggle">Full bio, gallery &amp; FAQ</a>
+                </div>
               </div>
               <blockquote className="mentor-pull">"The version of you that is possible is not a fantasy. It is a decision. Remarkable exists to help you make that decision — and then execute on it, every single month, for a year."</blockquote>
               <div className="mentor-attribution">— Ade' Olowojoba</div>
             </div>
           </div>
-
-          <div className="mentor-track reveal">
-            <div className="mentor-track-heading">
-              <span className="mentor-track-icon" aria-hidden="true" />
-              Mentorship you can verify
-            </div>
-            <p className="mentor-track-lead body-text">
-              Before Remarkable, Ade&apos; spent years building programs and teams that meet young people where they are — in classrooms, communities, and partner ecosystems across Nigeria and beyond.
-            </p>
-            <div className="mentor-stats">
-              <div className="mentor-stat mentor-stat--a">
-                <span className="mentor-stat-val">100k+</span>
-                <span className="mentor-stat-label">Young people reached via NerdzFactory programmes</span>
-              </div>
-              <div className="mentor-stat mentor-stat--b">
-                <span className="mentor-stat-val">CodeLagos</span>
-                <span className="mentor-stat-label">Pioneer project lead — state-wide digital skills</span>
-              </div>
-              <div className="mentor-stat mentor-stat--c">
-                <span className="mentor-stat-val">20+</span>
-                <span className="mentor-stat-label">Team members across three continents</span>
-              </div>
-              <div className="mentor-stat mentor-stat--d">
-                <span className="mentor-stat-val">Meta · UNDP</span>
-                <span className="mentor-stat-label">Plus Mastercard Foundation, British Council, GIZ &amp; more</span>
-              </div>
-            </div>
-            <ul className="mentor-track-list">
-              <li>
-                Scaled NerdzFactory from a room with under USD 100 into a pan-African organisation — over 100,000 young people reached with digital skills, workforce development, and entrepreneurship programmes.
-              </li>
-              <li>
-                Corporate chapter: Community Affairs at Microsoft Nigeria; later a director in Ondo State Government — bridging public purpose and private-sector execution.
-              </li>
-              <li>
-                Today: based in Canada with his family while actively building ventures that invest in Nigeria and Africa&apos;s next generation — Remarkable is that same through-line, condensed for 50 people.
-              </li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      <section className="moments-section moments-section-scroll" id="stories" aria-labelledby="moments-heading">
-        <div className="moments-section-glow" aria-hidden="true" />
-        <div className="inner moments-inner">
-          <div className="eyebrow reveal">In the room</div>
-          <h2 className="section-title reveal" id="moments-heading">
-            Moments from <em>the work</em>
-          </h2>
-          <p className="body-text reveal" style={{ maxWidth: '560px' }}>
-            Mentoring shows up in rooms — stages, cohorts, and partner programs. A few moments from the field.
-          </p>
-          <div
-            ref={momentsGridRef}
-            className="moments-grid reveal"
-            aria-label="Photos from programs and events"
-          >
-            {visibleMoments.map((src, i) => (
-              <button
-                type="button"
-                className={`moment-card${i === 0 ? ' moment-card--first-photo' : ''}`}
-                key={src}
-                onClick={() => setLightboxSrc(src)}
-                aria-label="Open image fullscreen"
-              >
-                <div className="moment-card-shine" aria-hidden="true" />
-                <img src={src} alt="" loading="lazy" decoding="async" />
-              </button>
-            ))}
-          </div>
-          {hasMoreMoments && !momentsExpanded ? (
-            <div className="moments-preload" aria-hidden="true">
-              {mentorMomentTiles.slice(MOMENTS_INITIAL_COUNT).map((src) => (
-                <img
-                  key={`preload-${src}`}
-                  src={src}
-                  alt=""
-                  width={1}
-                  height={1}
-                  loading="eager"
-                  decoding="async"
-                  fetchPriority="low"
-                />
-              ))}
-            </div>
-          ) : null}
-          {hasMoreMoments ? (
-            <div className="moments-actions reveal">
-              <button
-                type="button"
-                className={`btn-ghost moments-toggle ${momentsExpanded ? 'moments-toggle--less' : 'moments-toggle--more'}`}
-                onClick={() => setMomentsExpanded((v) => !v)}
-                aria-expanded={momentsExpanded}
-              >
-                {momentsExpanded ? 'View less' : 'View more'}
-              </button>
-            </div>
-          ) : null}
         </div>
       </section>
 
@@ -870,7 +780,7 @@ function App() {
                 <blockquote className="testimonial-card">
                   <div className="testimonial-avatar-ring" aria-hidden="true">
                     {t.image ? (
-                      <img src={t.image} alt="" />
+                      <img src={t.image} alt="" loading="lazy" decoding="async" />
                     ) : (
                       <span className="testimonial-avatar-initials">{testimonialInitials(t.name)}</span>
                     )}
@@ -890,7 +800,7 @@ function App() {
         <div className="inner">
           <div className="eyebrow reveal">Who Is This For?</div>
           <h2 className="section-title reveal">Eligibility & <em>Fit</em></h2>
-          <div className="elig-grid reveal">
+          <div className="elig-grid reveal elig-grid-single">
             <div className="elig-card">
               <div className="elig-title">You Are a Perfect Fit If...</div>
               <ul className="elig-list">
@@ -903,23 +813,117 @@ function App() {
                 <li>You are not looking for shortcuts — you want the real thing</li>
               </ul>
             </div>
-            <div className="elig-card">
-              <div className="elig-title">By April 2027 You Will Have...</div>
-              <ul className="elig-list">
-                <li>A renewed and sharpened mindset</li>
-                <li>Practical wisdom from 12 months of deep mentoring</li>
-                <li>A stronger, more intentional network</li>
-                <li>Measurable career or business growth</li>
-                <li>Clarity on your next chapter</li>
-                <li>A lifelong community of remarkable peers</li>
-                <li>The confidence that only consistent execution builds</li>
-              </ul>
+          </div>
+          <div className="section-cta reveal">
+            <a href="#apply" className="btn-primary">Register {'->'}</a>
+          </div>
+        </div>
+      </section>
+      </>
+      ) : (
+      <>
+      <section className="hero insights-hero" id="insights">
+        <div className="hero-radial"></div>
+        <div className="hero-grid-bg"></div>
+        <div className="hero-content">
+          <div className="hero-eyebrow">
+            <div className="hero-eyebrow-dot"></div>
+            <span className="hero-eyebrow-text">Inside Remarkable</span>
+          </div>
+          <h1 className="hero-title">The Program <em>In Full.</em></h1>
+          <p className="hero-sub">Everything in one place: calendar, convener profile, gallery moments, and full frequently asked questions.</p>
+          <div className="hero-actions">
+            <a href="#apply" className="btn-primary">Apply for Remarkable '26 {'->'}</a>
+            <a href="#home" className="btn-ghost">Back to Main Page</a>
+          </div>
+        </div>
+      </section>
+
+      <section className="journey" id="insights-calendar">
+        <div className="inner">
+          <div className="eyebrow reveal">Learning Calendar</div>
+          <h2 className="section-title reveal">A Year Designed to Change <em>the Trajectory of Your Life.</em></h2>
+          <div className="phases reveal">
+            <div className="phase"><div className="phase-tag">Phase 01 · April – June 2026</div><div className="phase-name">Foundation</div><div className="phase-sub">Know Yourself</div><ul className="phase-list"><li>Honest self-assessment & personal audit</li><li>Goal architecture & success mapping</li><li>Mindset renewal & belief systems</li><li>In-person launch & cohort bonding</li></ul></div>
+            <div className="phase"><div className="phase-tag">Phase 02 · July – September 2026</div><div className="phase-name">Growth</div><div className="phase-sub">Build Yourself</div><ul className="phase-list"><li>Building habits that compound</li><li>Strategic relationship development</li><li>Financial intelligence</li><li>Personal brand foundations</li></ul></div>
+            <div className="phase"><div className="phase-tag">Phase 03 · October – December 2026</div><div className="phase-name">Momentum</div><div className="phase-sub">Stretch Yourself</div><ul className="phase-list"><li>Career & business acceleration</li><li>Visibility & thought leadership</li><li>Execution & professional discipline</li><li>Navigating setbacks & resilience</li></ul></div>
+            <div className="phase"><div className="phase-tag">Phase 04 · January – April 2027</div><div className="phase-name">Legacy</div><div className="phase-sub">Establish Yourself</div><ul className="phase-list"><li>Consolidating your gains & wins</li><li>Learning to mentor and give back</li><li>Planning your next chapter</li><li>Graduation & alumni network</li></ul></div>
+          </div>
+          <div className="rhythm reveal">
+            <div className="eyebrow">Monthly Operating Rhythm</div>
+            <h3 className="section-title" style={{ fontSize: 'clamp(1.5rem,3vw,2.2rem)' }}>What Happens <em>Every Month</em></h3>
+            <div className="rhythm-grid">
+              <div className="rhythm-card"><div className="rhythm-num">01</div><div className="rhythm-title">Group Session</div><p className="rhythm-desc">90-minute live session with Ade' Olowojoba or a guest expert, covering the month's topic in depth.</p></div>
+              <div className="rhythm-card"><div className="rhythm-num">02</div><div className="rhythm-title">Peer Circles</div><p className="rhythm-desc">Small groups of 5–6 mentees meet to discuss challenges, share progress, and hold each other accountable.</p></div>
+              <div className="rhythm-card"><div className="rhythm-num">03</div><div className="rhythm-title">Personal Check-in</div><p className="rhythm-desc">A brief touchpoint with your track mentor to review your goals and receive personalized guidance.</p></div>
+              <div className="rhythm-card"><div className="rhythm-num">04</div><div className="rhythm-title">Monthly Reflection</div><p className="rhythm-desc">A guided review of wins, lessons, and commitments for the next 30 days.</p></div>
+            </div>
+          </div>
+          <div className="section-cta reveal">
+            <a href="#apply" className="btn-primary">Register {'->'}</a>
+          </div>
+        </div>
+      </section>
+
+      <section className="mentor-section" id="insights-bio">
+        <div className="inner">
+          <div className="eyebrow reveal">Convener Profile</div>
+          <div className="mentor-grid reveal">
+            <div className="mentor-photo">
+              <img src={mentorImage} alt="Ade' Olowojoba" />
+            </div>
+            <div>
+              <div className="mentor-name">Convener — Ade&apos; Olowojoba</div>
+              <div className="mentor-role">Serial Entrepreneur · Social Innovator</div>
+              <div className="mentor-bio-block">
+                {mentorBioParagraphs.map((para, i) => (
+                  <p key={i} className="mentor-bio">{para}</p>
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="faq-section" id="faq">
+      <section className="moments-section moments-section-scroll" id="insights-gallery" aria-labelledby="moments-heading">
+        <div className="moments-section-glow" aria-hidden="true" />
+        <div className="inner moments-inner">
+          <div className="eyebrow reveal">In the room</div>
+          <h2 className="section-title reveal" id="moments-heading">
+            Moments from <em>the work</em>
+          </h2>
+          <p className="body-text reveal" style={{ maxWidth: '560px' }}>
+            Mentoring shows up in rooms — stages, cohorts, and partner programs. A few moments from the field.
+          </p>
+          <div ref={momentsGridRef} className="moments-grid reveal" aria-label="Photos from programs and events">
+            {visibleMoments.map((src, i) => (
+              <button type="button" className={`moment-card${i === 0 ? ' moment-card--first-photo' : ''}`} key={src} onClick={() => setLightboxSrc(src)} aria-label="Open image fullscreen">
+                <div className="moment-card-shine" aria-hidden="true" />
+                <img src={src} alt="" loading="lazy" decoding="async" />
+              </button>
+            ))}
+          </div>
+          {hasMoreMoments && !momentsExpanded ? (
+            <div className="moments-preload" aria-hidden="true">
+              {mentorMomentTiles.slice(MOMENTS_INITIAL_COUNT).map((src) => (
+                <img key={`preload-${src}`} src={src} alt="" width={1} height={1} loading="eager" decoding="async" fetchPriority="low" />
+              ))}
+            </div>
+          ) : null}
+          {hasMoreMoments ? (
+            <div className="moments-actions reveal">
+              <button type="button" className={`btn-ghost moments-toggle ${momentsExpanded ? 'moments-toggle--less' : 'moments-toggle--more'}`} onClick={() => setMomentsExpanded((v) => !v)} aria-expanded={momentsExpanded}>
+                {momentsExpanded ? 'View less' : 'View more'}
+              </button>
+            </div>
+          ) : null}
+          <div className="section-cta reveal">
+            <a href="#apply" className="btn-primary">Register {'->'}</a>
+          </div>
+        </div>
+      </section>
+
+      <section className="faq-section" id="insights-faq">
         <div className="inner">
           <div className="eyebrow reveal">Frequently Asked Questions</div>
           <h2 className="section-title reveal">Your Questions, <em>Answered.</em></h2>
@@ -931,8 +935,13 @@ function App() {
             <div className="faq-item"><div className="faq-q">When does the application close?</div><div className="faq-a">Applications for Remarkable '26 close on April 8, 2026. Successful applicants will be notified by April 10, 2026. We strongly encourage early applications.</div></div>
             <div className="faq-item"><div className="faq-q">Can I apply outside Lagos?</div><div className="faq-a">Yes. While the program is anchored in Lagos, we welcome applications from high-potential individuals across Nigeria. Virtual participation is fully supported for monthly sessions.</div></div>
           </div>
+          <div className="section-cta reveal">
+            <a href="#apply" className="btn-primary">Register {'->'}</a>
+          </div>
         </div>
       </section>
+      </>
+      )}
 
       <section className="apply-section" id="apply">
         <div className="apply-bg"></div>
@@ -1115,10 +1124,14 @@ function App() {
             <div className="footer-col-title">Navigate</div>
             <ul className="footer-links">
               <li><a href="#about">About</a></li>
-              <li><a href="#program">The Program</a></li>
+              <li><a href="#insights-calendar">Program Calendar</a></li>
               <li><a href="#event">Launch Event</a></li>
-              <li><a href="#mentor">Your Mentor</a></li>
               <li><a href="#stories">Stories</a></li>
+              <li><a href="#insights">Inside Remarkable</a></li>
+              <li><a href="#insights-calendar">Learning Calendar</a></li>
+              <li><a href="#insights-bio">Convener Bio</a></li>
+              <li><a href="#insights-gallery">Gallery</a></li>
+              <li><a href="#insights-faq">FAQ</a></li>
               <li><a href="#apply">Apply Now</a></li>
             </ul>
           </div>
